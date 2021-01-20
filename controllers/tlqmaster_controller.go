@@ -57,7 +57,6 @@ type TLQMasterReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.0/pkg/reconcile
 func (r *TLQMasterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("tlqmaster", req.NamespacedName)
-
 	master := &tlqv1alpha1.TLQMaster{}
 	err := r.Get(ctx, req.NamespacedName, master)
 	if err != nil {
@@ -67,6 +66,14 @@ func (r *TLQMasterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 		log.Error(err, "Failed to get TongLinkQMaster")
 		return ctrl.Result{}, err
+	} else {
+		if master.Status.Parse == "" {
+			master.Status.Parse = tlqv1alpha1.Pending
+			err := r.Status().Update(ctx, master)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+		}
 	}
 	pod := &v1.Pod{}
 	err = r.Get(ctx, types.NamespacedName{Name: master.Name, Namespace: master.Namespace}, pod)
@@ -77,11 +84,6 @@ func (r *TLQMasterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				return ctrl.Result{}, err
 			}
 			if err := controllerutil.SetControllerReference(master, pod, r.Scheme); err != nil {
-				return ctrl.Result{}, err
-			}
-			master.Status.Parse = tlqv1alpha1.Pending
-			err := r.Status().Update(ctx, master)
-			if err != nil {
 				return ctrl.Result{}, err
 			}
 		} else {
@@ -99,8 +101,9 @@ func (r *TLQMasterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			master.Status.Parse = tlqv1alpha1.Pending
 		}
 		if oldStatus != master.Status.Parse {
-			err := r.Status().Update(ctx, master)
-			return ctrl.Result{}, err
+			if err := r.Status().Update(ctx, master); err != nil {
+				return ctrl.Result{}, err
+			}
 		}
 	}
 	return ctrl.Result{}, nil
@@ -116,6 +119,7 @@ func buildMasterPod(master *tlqv1alpha1.TLQMaster) *v1.Pod {
 		policy = v1.PullAlways
 	}
 	containers[0] = v1.Container{
+		Name:            master.Name,
 		Image:           master.Spec.Image,
 		ImagePullPolicy: policy,
 		VolumeMounts:    master.Spec.VolumeMounts,
