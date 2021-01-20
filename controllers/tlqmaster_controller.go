@@ -61,10 +61,10 @@ func (r *TLQMasterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	err := r.Get(ctx, req.NamespacedName, master)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			log.Info("TongLinkQMaster resource not found. Ignoring since object must be deleted.")
+			log.Info("TLQMaster resource not found. Ignoring since object must be deleted.")
 			return ctrl.Result{}, nil
 		}
-		log.Error(err, "Failed to get TongLinkQMaster")
+		log.Error(err, "Failed to get TLQMaster")
 		return ctrl.Result{}, err
 	} else {
 		if master.Status.Parse == "" {
@@ -80,12 +80,14 @@ func (r *TLQMasterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	if err != nil {
 		if errors.IsNotFound(err) {
 			pod := buildMasterPod(master)
-			if err := r.Create(ctx, pod); err != nil && !errors.IsAlreadyExists(err) {
-				return ctrl.Result{}, err
-			}
 			if err := controllerutil.SetControllerReference(master, pod, r.Scheme); err != nil {
 				return ctrl.Result{}, err
 			}
+			if err := r.Create(ctx, pod); err != nil && !errors.IsAlreadyExists(err) {
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, err
+
 		} else {
 			return ctrl.Result{}, err
 		}
