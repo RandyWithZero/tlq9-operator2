@@ -3,5 +3,5 @@ kind: TLQCluster
 metadata:
   name: tlqcluster-sample
 spec:
-  # Add fields here
-  foo: bar
+  workerSize: 1
+  enableWorkerBackup: false
