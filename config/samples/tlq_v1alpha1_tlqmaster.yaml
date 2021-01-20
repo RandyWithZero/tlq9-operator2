@@ -3,5 +3,4 @@ kind: TLQMaster
 metadata:
   name: tlqmaster-sample
 spec:
-  # Add fields here
-  foo: bar
+  image: 168.1.9.1/pub/nginx:1.19.1

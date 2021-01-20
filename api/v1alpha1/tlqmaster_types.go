@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -25,21 +26,44 @@ import (
 
 // TLQMasterSpec defines the desired state of TLQMaster
 type TLQMasterSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of TLQMaster. Edit tlqmaster_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// master image
+	Image string `json:"image,omitempty"`
+	// master image pull policy
+	ImagePullPolicy v1.PullPolicy `json:"imagePullPolicy,omitempty"`
+	//env
+	Envs []v1.EnvVar `json:"env,omitempty"`
+	//volumes
+	Volumes []v1.Volume `json:"volumes,omitempty"`
+	//VolumeMounts
+	VolumeMounts []v1.VolumeMount `json:"volumeMounts,omitempty"`
+	//port
+	Port int32 `json:"port,omitempty"`
 }
+type MasterStatus string
+
+var (
+	Healthy   MasterStatus = "Healthy"
+	UnHealthy MasterStatus = "UnHealthy"
+	Pending   MasterStatus = "Pending"
+	Fail      MasterStatus = "Fail"
+)
 
 // TLQMasterStatus defines the observed state of TLQMaster
 type TLQMasterStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Parse MasterStatus `json:"parse,omitempty"`
+	// master pod ip
+	MasterIp string `json:"masterIp,omitempty"`
+	// master pod node host ip
+	NodeIp string `json:"nodeIp,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+//+kubebuilder:printcolumn:name="Name",type="string",JSONPath=".metadata.name"
+//+kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.parse"
+//+kubebuilder:printcolumn:name="MasterIp",type="string",JSONPath=".status.masterIp",priority=10
+//+kubebuilder:printcolumn:name="NodeIp",type="string",JSONPath=".status.nodeIp",priority=10
 
 // TLQMaster is the Schema for the tlqmasters API
 type TLQMaster struct {
