@@ -1,0 +1,24 @@
+# permissions for end users to edit tlqclusters.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tlqcluster-editor-role
+rules:
+- apiGroups:
+  - tlq.tongtech.com
+  resources:
+  - tlqclusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - tlq.tongtech.com
+  resources:
+  - tlqclusters/status
+  verbs:
+  - get

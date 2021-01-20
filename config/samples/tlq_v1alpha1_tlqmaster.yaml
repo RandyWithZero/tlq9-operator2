@@ -1,0 +1,7 @@
+apiVersion: tlq.tongtech.com/v1alpha1
+kind: TLQMaster
+metadata:
+  name: tlqmaster-sample
+spec:
+  # Add fields here
+  foo: bar

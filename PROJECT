@@ -1,0 +1,21 @@
+domain: tongtech.com
+layout: go.kubebuilder.io/v3
+projectName: tlq9-operator2
+repo: tlq9-operator
+resources:
+- api:
+    crdVersion: v1
+  group: tlq
+  kind: TLQCluster
+  version: v1alpha1
+- api:
+    crdVersion: v1
+  group: tlq
+  kind: TLQMaster
+  version: v1alpha1
+- api:
+    crdVersion: v1
+  group: tlq
+  kind: TLQWoker
+  version: v1alpha1
+version: 3-alpha

@@ -1,0 +1,24 @@
+# permissions for end users to edit tlqmasters.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tlqmaster-editor-role
+rules:
+- apiGroups:
+  - tlq.tongtech.com
+  resources:
+  - tlqmasters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - tlq.tongtech.com
+  resources:
+  - tlqmasters/status
+  verbs:
+  - get
