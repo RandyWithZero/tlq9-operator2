@@ -120,8 +120,11 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 		},
 	}
 	statefulSet := &v12.StatefulSet{
-		TypeMeta:   metav1.TypeMeta{},
-		ObjectMeta: metav1.ObjectMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      master.Name,
+			Namespace: master.Namespace,
+			Labels:    defaultLabels,
+		},
 		Spec: v12.StatefulSetSpec{
 			Replicas: &defaultReplicas,
 			Selector: &metav1.LabelSelector{
