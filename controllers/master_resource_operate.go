@@ -91,6 +91,7 @@ func (o *MasterOperate) CreateOrUpdateStatefulSet(master *v1alpha1.TLQMaster) (*
 		statefulSetNew := buildStatefulSetInstance(master)
 		if !reflect.DeepEqual(&statefulSetNew, &statefulSetOld) {
 			o.log.Info("update reference statefulSet...")
+			setStatefulSet(statefulSetNew, master)
 			err := o.r.Update(o.ctx, statefulSetNew)
 			if err != nil {
 				return nil, ctrl.Result{}, err
@@ -150,4 +151,48 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 		},
 	}
 	return statefulSet
+}
+
+func setStatefulSet(statefulSet *v12.StatefulSet, master *v1alpha1.TLQMaster) {
+	containers := make([]v1.Container, 1)
+	ports := make([]v1.ContainerPort, 1)
+	ports[0] = v1.ContainerPort{
+		ContainerPort: master.Spec.Port,
+	}
+	policy := master.Spec.ImagePullPolicy
+	if "" == policy {
+		policy = v1.PullAlways
+	}
+	containers[0] = v1.Container{
+		Name:            master.Name,
+		Image:           master.Spec.Image,
+		ImagePullPolicy: policy,
+		VolumeMounts:    master.Spec.VolumeMounts,
+		Ports:           ports,
+		Env:             master.Spec.Envs,
+	}
+	defaultLabels["master"] = master.Name
+	template := v1.PodTemplateSpec{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      master.Name,
+			Namespace: master.Namespace,
+			Labels:    defaultLabels,
+		},
+		Spec: v1.PodSpec{
+			Volumes:       master.Spec.Volumes,
+			Containers:    containers,
+			RestartPolicy: v1.RestartPolicyAlways,
+		},
+	}
+	meta := &statefulSet.ObjectMeta
+	meta.Name = master.Name
+	meta.Namespace = master.Namespace
+	meta.Labels = defaultLabels
+	spec := &statefulSet.Spec
+	spec.Replicas = &defaultReplicas
+	spec.Selector = &metav1.LabelSelector{
+		MatchLabels: defaultLabels,
+	}
+	spec.Template = template
+	spec.VolumeClaimTemplates = master.Spec.VolumeClaimTemplates
 }
