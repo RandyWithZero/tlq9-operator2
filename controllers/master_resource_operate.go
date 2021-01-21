@@ -57,24 +57,39 @@ func (o *MasterOperate) UpdateMasterStatus(master *v1alpha1.TLQMaster, statefulS
 }
 
 func (o *MasterOperate) CreateOrUpdateStatefulSet(master *v1alpha1.TLQMaster) (*v12.StatefulSet, ctrl.Result, error) {
-	statefulSetOld := &v12.StatefulSet{}
-	err := o.r.Get(o.ctx, types.NamespacedName{Name: master.Name, Namespace: master.Namespace}, statefulSetOld)
+	statefulSet := &v12.StatefulSet{}
+	err := o.r.Get(o.ctx, types.NamespacedName{Name: master.Name, Namespace: master.Namespace}, statefulSet)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			o.log.Info("create reference statefulSet...")
 			statefulSet := buildStatefulSetInstance(master)
 			if err := controllerutil.SetControllerReference(master, statefulSet, o.r.Scheme); err != nil {
 				return nil, ctrl.Result{}, err
 			}
+			o.log.Info("set statefulSet owner ...")
 			if err := o.r.Create(o.ctx, statefulSet); err != nil && !errors.IsAlreadyExists(err) {
 				return nil, ctrl.Result{}, err
 			}
+			o.log.Info("create reference statefulSet...")
 		} else {
 			return nil, ctrl.Result{}, err
 		}
 	} else {
+		spec := statefulSet.Spec.Template.Spec
+		statefulSetOld := buildStatefulSetInstance(&v1alpha1.TLQMaster{
+			TypeMeta:   master.TypeMeta,
+			ObjectMeta: *master.ObjectMeta.DeepCopy(),
+			Spec: v1alpha1.TLQMasterSpec{
+				Image:                spec.Containers[0].Image,
+				ImagePullPolicy:      spec.Containers[0].ImagePullPolicy,
+				Volumes:              spec.Volumes,
+				VolumeClaimTemplates: statefulSet.Spec.VolumeClaimTemplates,
+				Port:                 spec.Containers[0].Ports[0].ContainerPort,
+				Envs:                 spec.Containers[0].Env,
+				VolumeMounts:         spec.Containers[0].VolumeMounts,
+			},
+		})
 		statefulSetNew := buildStatefulSetInstance(master)
-		if !reflect.DeepEqual(statefulSetNew, statefulSetOld) {
+		if !reflect.DeepEqual(&statefulSetNew, &statefulSetOld) {
 			o.log.Info("update reference statefulSet...")
 			err := o.r.Update(o.ctx, statefulSetNew)
 			if err != nil {
@@ -85,7 +100,7 @@ func (o *MasterOperate) CreateOrUpdateStatefulSet(master *v1alpha1.TLQMaster) (*
 
 		}
 	}
-	return statefulSetOld, ctrl.Result{}, nil
+	return statefulSet, ctrl.Result{}, nil
 }
 
 func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {

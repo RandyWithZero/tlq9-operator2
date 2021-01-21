@@ -18,11 +18,8 @@ package controllers
 
 import (
 	"context"
-	v12 "k8s.io/api/apps/v1"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-
 	"github.com/go-logr/logr"
+	v12 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -80,9 +77,7 @@ func (r *TLQMasterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 // SetupWithManager sets up the controller with the Manager.
 func (r *TLQMasterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		Watches(&source.Kind{Type: &v12.StatefulSet{}}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &tlqv1alpha1.TLQMaster{},
-		}).For(&tlqv1alpha1.TLQMaster{}).
+		For(&tlqv1alpha1.TLQMaster{}).
+		Owns(&v12.StatefulSet{}).
 		Complete(r)
 }
