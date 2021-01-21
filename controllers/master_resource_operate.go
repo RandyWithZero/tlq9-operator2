@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/go-logr/logr"
 	v12 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -92,6 +94,8 @@ func (o *MasterOperate) CreateOrUpdateStatefulSet(master *v1alpha1.TLQMaster) (*
 		if !reflect.DeepEqual(&statefulSetNew, &statefulSetOld) {
 			o.log.Info("update reference statefulSet...")
 			setStatefulSet(statefulSetNew, master)
+			marshal, _ := json.Marshal(statefulSetNew)
+			fmt.Println(string(marshal))
 			err := o.r.Update(o.ctx, statefulSetNew)
 			if err != nil {
 				return nil, ctrl.Result{}, err
@@ -153,7 +157,7 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 	return statefulSet
 }
 
-func setStatefulSet(statefulSet *v12.StatefulSet, master *v1alpha1.TLQMaster) {
+func setStatefulSet(statefulSet *v12.StatefulSet, master *v1alpha1.TLQMaster) *v12.StatefulSet {
 	containers := make([]v1.Container, 1)
 	ports := make([]v1.ContainerPort, 1)
 	ports[0] = v1.ContainerPort{
@@ -195,4 +199,5 @@ func setStatefulSet(statefulSet *v12.StatefulSet, master *v1alpha1.TLQMaster) {
 	}
 	spec.Template = template
 	spec.VolumeClaimTemplates = master.Spec.VolumeClaimTemplates
+	return statefulSet
 }
