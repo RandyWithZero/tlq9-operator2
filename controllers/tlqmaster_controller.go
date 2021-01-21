@@ -18,11 +18,7 @@ package controllers
 
 import (
 	"context"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	v12 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
@@ -57,119 +53,33 @@ type TLQMasterReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.0/pkg/reconcile
 func (r *TLQMasterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("tlqmaster", req.NamespacedName)
-	master := &tlqv1alpha1.TLQMaster{}
-	err := r.Get(ctx, req.NamespacedName, master)
 
-	if err != nil {
-		if errors.IsNotFound(err) {
-			log.Info("TLQMaster resource not found. Ignoring since object must be deleted.")
-			return ctrl.Result{}, nil
-		}
-		log.Error(err, "Failed to get TLQMaster")
-		return ctrl.Result{}, err
-	} else {
-		if master.Status.Parse == "" {
-			master.Status.Parse = tlqv1alpha1.Pending
-			err := r.Status().Update(ctx, master)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
-		}
+	//do something
+	operate := &MasterOperate{
+		log: log,
+		r:   r,
+		ctx: ctx,
+		req: req,
 	}
-	pod := &v1.Pod{}
-	err = r.Get(ctx, types.NamespacedName{Name: master.Name, Namespace: master.Namespace}, pod)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			pod := buildMasterPod(master, log)
-			if err := controllerutil.SetControllerReference(master, pod, r.Scheme); err != nil {
-				return ctrl.Result{}, err
-			}
-			if err := r.Create(ctx, pod); err != nil && !errors.IsAlreadyExists(err) {
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{}, err
-
-		} else {
-			return ctrl.Result{}, err
-		}
-	} else {
-		oldStatus := master.Status.Parse
-		if v1.PodRunning == pod.Status.Phase {
-			master.Status.Parse = tlqv1alpha1.UnHealthy
-			master.Status.MasterIp = pod.Status.PodIP
-			master.Status.NodeIp = pod.Status.HostIP
-		} else if v1.PodFailed == pod.Status.Phase {
-			master.Status.Parse = tlqv1alpha1.Fail
-		} else {
-			master.Status.Parse = tlqv1alpha1.Pending
-		}
-		if oldStatus != master.Status.Parse {
-			if err := r.Status().Update(ctx, master); err != nil {
-				return ctrl.Result{}, err
-			}
-		}
+	//get TLQMaster Resource
+	master, result, err := operate.GetMaster()
+	if master == nil {
+		return result, err
 	}
-	return ctrl.Result{}, nil
-}
-
-func buildMasterPod(master *tlqv1alpha1.TLQMaster, log logr.Logger) *v1.Pod {
-
-	containers := make([]v1.Container, 1)
-	ports := make([]v1.ContainerPort, 1)
-	ports[0] = v1.ContainerPort{
-		ContainerPort: master.Spec.Port,
+	//get reference statefulSet
+	stateful, c, err := operate.CreateOrUpdateStatefulSet(master)
+	if stateful == nil {
+		return c, err
 	}
-	policy := master.Spec.ImagePullPolicy
-	if "" == policy {
-		policy = v1.PullAlways
-	}
-	containers[0] = v1.Container{
-		Name:            master.Name,
-		Image:           master.Spec.Image,
-		ImagePullPolicy: policy,
-		VolumeMounts:    master.Spec.VolumeMounts,
-		Ports:           ports,
-		Env:             master.Spec.Envs,
-	}
-	pod := v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      master.Name,
-			Namespace: master.Namespace,
-			Labels: map[string]string{
-				"role": "master",
-			},
-		},
-		Spec: v1.PodSpec{
-			Volumes:       master.Spec.Volumes,
-			Containers:    containers,
-			RestartPolicy: v1.RestartPolicyAlways,
-		},
-	}
-	log.Info("create reference pod:" + pod.Name)
-	return &pod
-}
-
-func reBuildMasterPod(pod *v1.Pod, master *tlqv1alpha1.TLQMaster, log logr.Logger) *v1.Pod {
-	container := pod.Spec.Containers[0]
-	container.Env = master.Spec.Envs
-	container.Image = master.Spec.Image
-	container.VolumeMounts = master.Spec.VolumeMounts
-	policy := master.Spec.ImagePullPolicy
-	if "" == policy {
-		policy = v1.PullAlways
-	}
-	container.ImagePullPolicy = policy
-	container.Ports[0].ContainerPort = master.Spec.Port
-	spec := pod.Spec
-	spec.Volumes = master.Spec.Volumes
-	log.Info("update reference pod:" + pod.Name)
-	return pod
+	//update  TLQMaster status
+	re, err := operate.UpdateMasterStatus(master, stateful)
+	return re, err
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *TLQMasterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		Watches(&source.Kind{Type: &v1.Pod{}}, &handler.EnqueueRequestForOwner{
+		Watches(&source.Kind{Type: &v12.StatefulSet{}}, &handler.EnqueueRequestForOwner{
 			IsController: true,
 			OwnerType:    &tlqv1alpha1.TLQMaster{},
 		}).For(&tlqv1alpha1.TLQMaster{}).

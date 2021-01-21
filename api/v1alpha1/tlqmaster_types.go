@@ -36,6 +36,8 @@ type TLQMasterSpec struct {
 	Volumes []v1.Volume `json:"volumes,omitempty"`
 	//VolumeMounts
 	VolumeMounts []v1.VolumeMount `json:"volumeMounts,omitempty"`
+	//VolumeClaimTemplates
+	VolumeClaimTemplates []v1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty"`
 	//port
 	Port int32 `json:"port,omitempty"`
 }
