@@ -59,6 +59,7 @@ func (r *TLQMasterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	log := r.Log.WithValues("tlqmaster", req.NamespacedName)
 	master := &tlqv1alpha1.TLQMaster{}
 	err := r.Get(ctx, req.NamespacedName, master)
+
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Info("TLQMaster resource not found. Ignoring since object must be deleted.")
@@ -79,7 +80,7 @@ func (r *TLQMasterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	err = r.Get(ctx, types.NamespacedName{Name: master.Name, Namespace: master.Namespace}, pod)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			pod := buildMasterPod(master)
+			pod := buildMasterPod(master, log)
 			if err := controllerutil.SetControllerReference(master, pod, r.Scheme); err != nil {
 				return ctrl.Result{}, err
 			}
@@ -110,7 +111,9 @@ func (r *TLQMasterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 	return ctrl.Result{}, nil
 }
-func buildMasterPod(master *tlqv1alpha1.TLQMaster) *v1.Pod {
+
+func buildMasterPod(master *tlqv1alpha1.TLQMaster, log logr.Logger) *v1.Pod {
+
 	containers := make([]v1.Container, 1)
 	ports := make([]v1.ContainerPort, 1)
 	ports[0] = v1.ContainerPort{
@@ -142,16 +145,33 @@ func buildMasterPod(master *tlqv1alpha1.TLQMaster) *v1.Pod {
 			RestartPolicy: v1.RestartPolicyAlways,
 		},
 	}
+	log.Info("create reference pod:" + pod.Name)
 	return &pod
+}
+
+func reBuildMasterPod(pod *v1.Pod, master *tlqv1alpha1.TLQMaster, log logr.Logger) *v1.Pod {
+	container := pod.Spec.Containers[0]
+	container.Env = master.Spec.Envs
+	container.Image = master.Spec.Image
+	container.VolumeMounts = master.Spec.VolumeMounts
+	policy := master.Spec.ImagePullPolicy
+	if "" == policy {
+		policy = v1.PullAlways
+	}
+	container.ImagePullPolicy = policy
+	container.Ports[0].ContainerPort = master.Spec.Port
+	spec := pod.Spec
+	spec.Volumes = master.Spec.Volumes
+	log.Info("update reference pod:" + pod.Name)
+	return pod
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *TLQMasterReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	c := ctrl.NewControllerManagedBy(mgr)
-	c.Watches(&source.Kind{Type: &v1.Pod{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &tlqv1alpha1.TLQMaster{},
-	})
-	return c.For(&tlqv1alpha1.TLQMaster{}).
+	return ctrl.NewControllerManagedBy(mgr).
+		Watches(&source.Kind{Type: &v1.Pod{}}, &handler.EnqueueRequestForOwner{
+			IsController: true,
+			OwnerType:    &tlqv1alpha1.TLQMaster{},
+		}).For(&tlqv1alpha1.TLQMaster{}).
 		Complete(r)
 }
