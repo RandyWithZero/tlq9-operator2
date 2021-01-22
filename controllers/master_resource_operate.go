@@ -144,7 +144,7 @@ func (o *MasterOperate) CreateOrUpdateStatefulSet(master *v1alpha1.TLQMaster, se
 func buildServiceInstance(master *v1alpha1.TLQMaster) *v1.Service {
 	ports := make([]v1.ServicePort, 1)
 	ports[0] = v1.ServicePort{
-		Name:       "masterPort",
+		Name:       "master-port",
 		TargetPort: intstr.FromInt(int(master.Spec.Port)),
 		Port:       master.Spec.Port,
 	}
