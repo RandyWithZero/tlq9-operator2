@@ -63,8 +63,8 @@ var (
 // TLQMasterStatus defines the observed state of TLQMaster
 type TLQMasterStatus struct {
 	Parse MasterStatus `json:"parse,omitempty"`
-	// master pod ip
-	Server string `json:"Server,omitempty"`
+	// master server address
+	Server string `json:"server,omitempty"`
 }
 
 //+kubebuilder:object:root=true
@@ -72,8 +72,7 @@ type TLQMasterStatus struct {
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 //+kubebuilder:printcolumn:name="Name",type="string",JSONPath=".metadata.name"
 //+kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.parse"
-//+kubebuilder:printcolumn:name="MasterIp",type="string",JSONPath=".status.masterIp",priority=10
-//+kubebuilder:printcolumn:name="NodeIp",type="string",JSONPath=".status.nodeIp",priority=10
+//+kubebuilder:printcolumn:name="MasterAddress",type="string",JSONPath=".status.server",priority=10
 
 // TLQMaster is the Schema for the tlqmasters API
 type TLQMaster struct {
