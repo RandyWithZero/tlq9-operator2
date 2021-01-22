@@ -27,7 +27,7 @@ import (
 // TLQMasterSpec defines the desired state of TLQMaster
 type TLQMasterSpec struct {
 	// UserName
-	UserName string `json:"userName,omitempty"`
+	UserName string `json:"username,omitempty"`
 	// Password
 	Password string `json:"password,omitempty"`
 	// AdvertiseInterval
