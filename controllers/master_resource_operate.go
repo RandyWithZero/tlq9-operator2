@@ -254,6 +254,19 @@ func SetEnv(statefulSet *v12.StatefulSet, service *v1.Service, master *v1alpha1.
 		Name:  "AdvertiseInterval",
 		Value: string(master.Spec.AdvertiseInterval),
 	}
-	newEnv := append(envs, e1, e2, e3, e4, e5, e6, e7, e8)
-	statefulSet.Spec.Template.Spec.Containers[0].Env = newEnv
+	if envs == nil || cap(envs) == 0 {
+		envs = make([]v1.EnvVar, 8)
+		envs[0] = e1
+		envs[1] = e2
+		envs[2] = e3
+		envs[3] = e4
+		envs[4] = e5
+		envs[5] = e6
+		envs[6] = e7
+		envs[7] = e8
+
+	} else {
+		envs = append(envs, e1, e2, e3, e4, e5, e6, e7, e8)
+	}
+	statefulSet.Spec.Template.Spec.Containers[0].Env = envs
 }
