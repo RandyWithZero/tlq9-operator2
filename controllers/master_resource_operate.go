@@ -222,7 +222,7 @@ func SetEnv(statefulSet *v12.StatefulSet, service *v1.Service, master *v1alpha1.
 		Name: "IpAddress",
 		ValueFrom: &v1.EnvVarSource{
 			FieldRef: &v1.ObjectFieldSelector{
-				FieldPath: "status.hostIp",
+				FieldPath: "status.hostIP",
 			},
 		},
 	}
