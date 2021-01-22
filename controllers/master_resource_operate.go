@@ -93,9 +93,10 @@ func (o *MasterOperate) CreateOrUpdateStatefulSet(master *v1alpha1.TLQMaster) (*
 		statefulSetNew := buildStatefulSetInstance(master)
 		if !reflect.DeepEqual(&statefulSetNew, &statefulSetOld) {
 			o.log.Info("update reference statefulSet...")
-			setStatefulSet(statefulSetNew, master)
+			statefulSetNew.ObjectMeta = *statefulSet.ObjectMeta.DeepCopy()
 			marshal, _ := json.Marshal(statefulSetNew)
 			fmt.Println(string(marshal))
+
 			err := o.r.Update(o.ctx, statefulSetNew)
 			if err != nil {
 				return nil, ctrl.Result{}, err
@@ -125,6 +126,7 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 		VolumeMounts:    master.Spec.VolumeMounts,
 		Ports:           ports,
 		Env:             master.Spec.Envs,
+		Resources:       master.Spec.Resource,
 	}
 	defaultLabels["master"] = master.Name
 	template := v1.PodTemplateSpec{
@@ -174,6 +176,7 @@ func setStatefulSet(statefulSet *v12.StatefulSet, master *v1alpha1.TLQMaster) *v
 		VolumeMounts:    master.Spec.VolumeMounts,
 		Ports:           ports,
 		Env:             master.Spec.Envs,
+		Resources:       master.Spec.Resource,
 	}
 	defaultLabels["master"] = master.Name
 	template := v1.PodTemplateSpec{
