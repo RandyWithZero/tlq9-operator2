@@ -64,8 +64,13 @@ func (r *TLQMasterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	if master == nil {
 		return result, err
 	}
+	//service
+	svc, svcResult, err := operate.CreateOrUpdateService(master)
+	if svc == nil {
+		return svcResult, err
+	}
 	//get reference statefulSet
-	stateful, c, err := operate.CreateOrUpdateStatefulSet(master)
+	stateful, c, err := operate.CreateOrUpdateStatefulSet(master, svc)
 	if stateful == nil {
 		return c, err
 	}

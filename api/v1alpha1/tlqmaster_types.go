@@ -26,6 +26,14 @@ import (
 
 // TLQMasterSpec defines the desired state of TLQMaster
 type TLQMasterSpec struct {
+	// UserName
+	UserName string `json:"userName,omitempty"`
+	// Password
+	Password string `json:"password,omitempty"`
+	// AdvertiseInterval
+	AdvertiseInterval uint `json:"advertiseInterval,omitempty"`
+	// VRRPPasswd
+	VRRPPasswd string `json:"vrrpPassword,omitempty"`
 	// master image
 	Image string `json:"image,omitempty"`
 	// master image pull policy
@@ -56,9 +64,7 @@ var (
 type TLQMasterStatus struct {
 	Parse MasterStatus `json:"parse,omitempty"`
 	// master pod ip
-	MasterIp string `json:"masterIp,omitempty"`
-	// master pod node host ip
-	NodeIp string `json:"nodeIp,omitempty"`
+	Server string `json:"Server,omitempty"`
 }
 
 //+kubebuilder:object:root=true
