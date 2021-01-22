@@ -84,7 +84,7 @@ func (r *TLQMasterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return c, err
 	}
 	//update  TLQMaster status
-	re, err := operate.UpdateMasterStatus(master, stateful)
+	re, err := operate.UpdateMasterStatus(master, stateful, service)
 	return re, err
 }
 

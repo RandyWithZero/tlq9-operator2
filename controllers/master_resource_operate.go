@@ -2,17 +2,17 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"github.com/go-logr/logr"
 	v12 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strconv"
 	"tlq9-operator/api/v1alpha1"
@@ -74,11 +74,28 @@ func (o *MasterOperate) CreateOrUpdateService(master *v1alpha1.TLQMaster) (*v1.S
 	}
 	return service, ctrl.Result{}, nil
 }
-func (o *MasterOperate) UpdateMasterStatus(master *v1alpha1.TLQMaster, statefulSet *v12.StatefulSet) (ctrl.Result, error) {
+func (o *MasterOperate) UpdateMasterStatus(master *v1alpha1.TLQMaster, statefulSet *v12.StatefulSet, service *v1.Service) (ctrl.Result, error) {
 	o.log.Info("update TLQMaster resource status ...")
 	oldStatus := master.Status.Parse
 	if statefulSet.Status.ReadyReplicas == defaultReplicas {
 		master.Status.Parse = v1alpha1.Healthy
+
+		list := &v1.PodList{}
+		labelSelector := labels.SelectorFromSet(statefulSet.Spec.Selector.MatchLabels)
+		listOps := &client.ListOptions{
+			Namespace:     statefulSet.Namespace,
+			LabelSelector: labelSelector,
+		}
+		err := o.r.List(o.ctx, list, listOps)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		if len(list.Items) == 0 {
+			master.Status.Parse = v1alpha1.Pending
+		} else {
+			pod := list.Items[0]
+			master.Status.Server = pod.Status.HostIP + ":" + strconv.Itoa(int(service.Spec.Ports[0].NodePort))
+		}
 	} else if statefulSet.Status.ReadyReplicas == 0 {
 		master.Status.Parse = v1alpha1.Pending
 	}
@@ -128,9 +145,6 @@ func (o *MasterOperate) CreateOrUpdateStatefulSet(master *v1alpha1.TLQMaster, se
 		if !reflect.DeepEqual(&statefulSetNew, &statefulSetOld) {
 			o.log.Info("update reference statefulSet...")
 			statefulSetNew.ObjectMeta = *statefulSet.ObjectMeta.DeepCopy()
-			marshal, _ := json.Marshal(statefulSetNew)
-			fmt.Println(string(marshal))
-
 			err := o.r.Update(o.ctx, statefulSetNew)
 			if err != nil {
 				return nil, ctrl.Result{}, err
@@ -214,8 +228,6 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 }
 
 func SetEnv(statefulSet *v12.StatefulSet, service *v1.Service, master *v1alpha1.TLQMaster) {
-	marshal, _ := json.Marshal(service)
-	fmt.Println(string(marshal))
 	envs := statefulSet.Spec.Template.Spec.Containers[0].Env
 	nodePort := service.Spec.Ports[0].NodePort
 	e1 := v1.EnvVar{
