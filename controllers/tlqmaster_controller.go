@@ -20,7 +20,9 @@ import (
 	"context"
 	"github.com/go-logr/logr"
 	v12 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -67,11 +69,17 @@ func (r *TLQMasterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 	//service
 	svc, svcResult, err := operate.CreateOrUpdateService(master)
+	service := &v1.Service{}
 	if svc == nil {
 		return svcResult, err
+	} else {
+		err := r.Get(ctx, types.NamespacedName{Name: master.Name, Namespace: master.Namespace}, service)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 	//get reference statefulSet
-	stateful, c, err := operate.CreateOrUpdateStatefulSet(master, svc)
+	stateful, c, err := operate.CreateOrUpdateStatefulSet(master, service)
 	if stateful == nil {
 		return c, err
 	}
