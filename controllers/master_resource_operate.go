@@ -14,6 +14,7 @@ import (
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"strconv"
 	"tlq9-operator/api/v1alpha1"
 )
 
@@ -148,6 +149,7 @@ func buildServiceInstance(master *v1alpha1.TLQMaster) *v1.Service {
 		TargetPort: intstr.FromInt(int(master.Spec.Port)),
 		Port:       master.Spec.Port,
 	}
+	defaultLabels["master"] = master.Name
 	return &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      master.Name,
@@ -212,6 +214,8 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 }
 
 func SetEnv(statefulSet *v12.StatefulSet, service *v1.Service, master *v1alpha1.TLQMaster) {
+	marshal, _ := json.Marshal(service)
+	fmt.Println(string(marshal))
 	envs := statefulSet.Spec.Template.Spec.Containers[0].Env
 	nodePort := service.Spec.Ports[0].NodePort
 	e1 := v1.EnvVar{
@@ -224,7 +228,7 @@ func SetEnv(statefulSet *v12.StatefulSet, service *v1.Service, master *v1alpha1.
 	}
 	e2 := v1.EnvVar{
 		Name:  "ListenPort",
-		Value: string(nodePort),
+		Value: strconv.Itoa(int(nodePort)),
 	}
 	e3 := v1.EnvVar{
 		Name: "NameServerName",
@@ -252,7 +256,7 @@ func SetEnv(statefulSet *v12.StatefulSet, service *v1.Service, master *v1alpha1.
 	}
 	e8 := v1.EnvVar{
 		Name:  "AdvertiseInterval",
-		Value: string(master.Spec.AdvertiseInterval),
+		Value: strconv.Itoa(int(master.Spec.AdvertiseInterval)),
 	}
 	if envs == nil || cap(envs) == 0 {
 		envs = make([]v1.EnvVar, 8)
