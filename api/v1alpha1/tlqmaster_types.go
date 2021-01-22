@@ -40,6 +40,8 @@ type TLQMasterSpec struct {
 	VolumeClaimTemplates []v1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty"`
 	//port
 	Port int32 `json:"port,omitempty"`
+	//resource
+	Resource v1.ResourceRequirements `json:"resource,omitempty"`
 }
 type MasterStatus string
 
