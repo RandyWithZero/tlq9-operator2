@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strconv"
+	"time"
 	"tlq9-operator/api/v1alpha1"
 )
 
@@ -65,6 +66,7 @@ func (o *MasterOperate) CreateOrUpdateService(master *v1alpha1.TLQMaster) (*v1.S
 		if service.Spec.Ports[0].Port != master.Spec.Port {
 			service.Spec.Ports[0].Port = master.Spec.Port
 			err := o.r.Update(o.ctx, service)
+			o.log.Info("update reference service...")
 			if err != nil {
 				return nil, ctrl.Result{}, err
 			} else {
@@ -189,6 +191,7 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 		Resources:       master.Spec.Resource,
 	}
 	defaultLabels["master"] = master.Name
+	defaultLabels["update"] = time.Now().String()
 	template := v1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      master.Name,

@@ -70,9 +70,8 @@ type TLQMasterStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-//+kubebuilder:printcolumn:name="Name",type="string",JSONPath=".metadata.name"
 //+kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.parse"
-//+kubebuilder:printcolumn:name="MasterAddress",type="string",JSONPath=".status.server",priority=10
+//+kubebuilder:printcolumn:name="Master-Address",type="string",JSONPath=".status.server"
 
 // TLQMaster is the Schema for the tlqmasters API
 type TLQMaster struct {
