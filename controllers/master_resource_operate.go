@@ -79,7 +79,6 @@ func (o *MasterOperate) UpdateMasterStatus(master *v1alpha1.TLQMaster, statefulS
 	oldStatus := master.Status.Parse
 	if statefulSet.Status.ReadyReplicas == defaultReplicas {
 		master.Status.Parse = v1alpha1.Healthy
-
 		list := &v1.PodList{}
 		labelSelector := labels.SelectorFromSet(statefulSet.Spec.Selector.MatchLabels)
 		listOps := &client.ListOptions{
@@ -91,7 +90,7 @@ func (o *MasterOperate) UpdateMasterStatus(master *v1alpha1.TLQMaster, statefulS
 			return ctrl.Result{}, err
 		}
 		if len(list.Items) == 0 {
-			master.Status.Parse = v1alpha1.Pending
+			master.Status.Parse = v1alpha1.Fail
 		} else {
 			pod := list.Items[0]
 			master.Status.Server = pod.Status.HostIP + ":" + strconv.Itoa(int(service.Spec.Ports[0].NodePort))
