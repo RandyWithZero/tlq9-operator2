@@ -16,7 +16,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strconv"
-	"time"
 	"tlq9-operator/api/v1alpha1"
 )
 
@@ -131,12 +130,13 @@ func (o *MasterOperate) CreateOrUpdateStatefulSet(master *v1alpha1.TLQMaster, se
 			return nil, ctrl.Result{}, err
 		}
 	} else {
-		newMasterBytes, _ := json.Marshal(master.Spec)
 		statefulSetNew := buildStatefulSetInstance(master)
+		annotations := statefulSetNew.Annotations
 		SetEnv(statefulSetNew, service, master)
-		if !bytes.Equal([]byte(statefulSet.Annotations["owner-spec"]), newMasterBytes) {
+		if !bytes.Equal([]byte(statefulSet.Annotations["owner-spec"]), []byte(statefulSetNew.Annotations["owner-spec"])) {
 			o.log.Info("update reference statefulSet...")
 			statefulSetNew.ObjectMeta = *statefulSet.ObjectMeta.DeepCopy()
+			statefulSetNew.Annotations = annotations
 			err := o.r.Update(o.ctx, statefulSetNew)
 			if err != nil {
 				return nil, ctrl.Result{}, err
@@ -203,17 +203,17 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 			RestartPolicy: v1.RestartPolicyAlways,
 		},
 	}
-	statefulSetLabels := map[string]string{}
+	/*statefulSetLabels := map[string]string{}
 	formatInt := strconv.FormatInt(time.Now().Unix(), 10)
 	statefulSetLabels["update"] = formatInt
 	statefulSetLabels["master"] = master.Name
-	statefulSetLabels["role"] = "master"
+	statefulSetLabels["role"] = "master"*/
 	masterJson, _ := json.Marshal(master.Spec)
 	statefulSet := &v12.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      master.Name,
 			Namespace: master.Namespace,
-			Labels:    statefulSetLabels,
+			Labels:    defaultLabels,
 			Annotations: map[string]string{
 				"owner-spec": string(masterJson),
 			},
