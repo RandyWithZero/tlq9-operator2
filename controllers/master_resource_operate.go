@@ -191,7 +191,6 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 		Resources:       master.Spec.Resource,
 	}
 	defaultLabels["master"] = master.Name
-	defaultLabels["update"] = time.Now().String()
 	template := v1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      master.Name,
@@ -204,12 +203,14 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 			RestartPolicy: v1.RestartPolicyAlways,
 		},
 	}
+	statefulSetLabels := defaultLabels
+	statefulSetLabels["update"] = string(time.Now().UnixNano())
 	masterJson, _ := json.Marshal(master.Spec)
 	statefulSet := &v12.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      master.Name,
 			Namespace: master.Namespace,
-			Labels:    defaultLabels,
+			Labels:    statefulSetLabels,
 			Annotations: map[string]string{
 				"owner-spec": string(masterJson),
 			},
