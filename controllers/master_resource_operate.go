@@ -116,8 +116,8 @@ func (o *MasterOperate) CreateOrUpdateStatefulSet(master *v1alpha1.TLQMaster, se
 	if err != nil {
 		if errors.IsNotFound(err) {
 			statefulSet := buildStatefulSetInstance(master)
-			SetEnv(statefulSet, service, master)
-			if err := controllerutil.SetControllerReference(master, statefulSet, o.r.Scheme); err != nil {
+			statefulSetAfterSetEnv := SetEnv(*statefulSet, service, master)
+			if err := controllerutil.SetControllerReference(master, statefulSetAfterSetEnv, o.r.Scheme); err != nil {
 				return nil, ctrl.Result{}, err
 			}
 			o.log.Info("set statefulSet owner ...")
@@ -144,10 +144,10 @@ func (o *MasterOperate) CreateOrUpdateStatefulSet(master *v1alpha1.TLQMaster, se
 			},
 		})
 		statefulSetNew := buildStatefulSetInstance(master)
-		SetEnv(statefulSetNew, service, master)
-		if !reflect.DeepEqual(&statefulSetNew.Spec, &statefulSetOld.Spec) {
+		statefulSetAfterSetEnv := SetEnv(*statefulSetNew, service, master)
+		if !reflect.DeepEqual(&statefulSetNew, &statefulSetOld) {
 			o.log.Info("update reference statefulSet...")
-			statefulSetNew.ObjectMeta = *statefulSet.ObjectMeta.DeepCopy()
+			statefulSetNew.ObjectMeta = *statefulSetAfterSetEnv.ObjectMeta.DeepCopy()
 			err := o.r.Update(o.ctx, statefulSetNew)
 			if err != nil {
 				return nil, ctrl.Result{}, err
@@ -230,7 +230,7 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 	return statefulSet
 }
 
-func SetEnv(statefulSet *v12.StatefulSet, service *v1.Service, master *v1alpha1.TLQMaster) {
+func SetEnv(statefulSet v12.StatefulSet, service *v1.Service, master *v1alpha1.TLQMaster) *v12.StatefulSet {
 	envs := statefulSet.Spec.Template.Spec.Containers[0].Env
 	nodePort := service.Spec.Ports[0].NodePort
 	e1 := v1.EnvVar{
@@ -288,4 +288,5 @@ func SetEnv(statefulSet *v12.StatefulSet, service *v1.Service, master *v1alpha1.
 		envs = append(envs, e1, e2, e3, e4, e5, e6, e7, e8)
 	}
 	statefulSet.Spec.Template.Spec.Containers[0].Env = envs
+	return statefulSet.DeepCopy()
 }
