@@ -204,7 +204,8 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 		},
 	}
 	statefulSetLabels := defaultLabels
-	statefulSetLabels["update"] = strconv.Itoa(time.Now().Second())
+	formatInt := strconv.FormatInt(time.Now().Unix(), 10)
+	statefulSetLabels["update"] = formatInt
 	masterJson, _ := json.Marshal(master.Spec)
 	statefulSet := &v12.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
