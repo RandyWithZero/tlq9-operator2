@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/go-logr/logr"
 	v12 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -88,19 +87,19 @@ func (o *MasterOperate) UpdateMasterStatus(master *v1alpha1.TLQMaster, statefulS
 			LabelSelector: labelSelector,
 		}
 		err := o.r.List(o.ctx, list, listOps)
-		marshal, _ := json.Marshal(list)
-		fmt.Println(string(marshal))
 		if err != nil {
 			return ctrl.Result{}, err
 		}
 		if len(list.Items) == 0 {
 			master.Status.Parse = v1alpha1.Fail
+			master.Status.Server = ""
 		} else {
 			pod := list.Items[0]
 			master.Status.Server = pod.Status.HostIP + ":" + strconv.Itoa(int(service.Spec.Ports[0].NodePort))
 		}
 	} else if statefulSet.Status.ReadyReplicas == 0 {
 		master.Status.Parse = v1alpha1.Pending
+		master.Status.Server = ""
 	}
 	if oldStatus != master.Status.Parse {
 		if err := o.r.Status().Update(o.ctx, master); err != nil {
@@ -130,10 +129,10 @@ func (o *MasterOperate) CreateOrUpdateStatefulSet(master *v1alpha1.TLQMaster, se
 			return nil, ctrl.Result{}, err
 		}
 	} else {
-		newMasterBytes, _ := json.Marshal(master)
+		newMasterBytes, _ := json.Marshal(master.Spec)
 		statefulSetNew := buildStatefulSetInstance(master)
 		SetEnv(statefulSetNew, service, master)
-		if !bytes.Equal([]byte(statefulSet.Annotations["owner"]), newMasterBytes) {
+		if !bytes.Equal([]byte(statefulSet.Annotations["owner-spec"]), newMasterBytes) {
 			o.log.Info("update reference statefulSet...")
 			statefulSetNew.ObjectMeta = *statefulSet.ObjectMeta.DeepCopy()
 			err := o.r.Update(o.ctx, statefulSetNew)
@@ -202,14 +201,14 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 			RestartPolicy: v1.RestartPolicyAlways,
 		},
 	}
-	masterJson, _ := json.Marshal(master)
+	masterJson, _ := json.Marshal(master.Spec)
 	statefulSet := &v12.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      master.Name,
 			Namespace: master.Namespace,
 			Labels:    defaultLabels,
 			Annotations: map[string]string{
-				"owner": string(masterJson),
+				"owner-spec": string(masterJson),
 			},
 		},
 		Spec: v12.StatefulSetSpec{
