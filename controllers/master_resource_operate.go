@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -116,8 +116,8 @@ func (o *MasterOperate) CreateOrUpdateStatefulSet(master *v1alpha1.TLQMaster, se
 	if err != nil {
 		if errors.IsNotFound(err) {
 			statefulSet := buildStatefulSetInstance(master)
-			statefulSetAfterSetEnv := SetEnv(*statefulSet, service, master)
-			if err := controllerutil.SetControllerReference(master, statefulSetAfterSetEnv, o.r.Scheme); err != nil {
+			SetEnv(statefulSet, service, master)
+			if err := controllerutil.SetControllerReference(master, statefulSet, o.r.Scheme); err != nil {
 				return nil, ctrl.Result{}, err
 			}
 			o.log.Info("set statefulSet owner ...")
@@ -125,41 +125,29 @@ func (o *MasterOperate) CreateOrUpdateStatefulSet(master *v1alpha1.TLQMaster, se
 				return nil, ctrl.Result{}, err
 			}
 			o.log.Info("create reference statefulSet...")
+			return statefulSet, ctrl.Result{}, err
 		} else {
 			return nil, ctrl.Result{}, err
 		}
 	} else {
-		spec := statefulSet.Spec.Template.Spec
-		statefulSetOld := buildStatefulSetInstance(&v1alpha1.TLQMaster{
-			TypeMeta:   master.TypeMeta,
-			ObjectMeta: *master.ObjectMeta.DeepCopy(),
-			Spec: v1alpha1.TLQMasterSpec{
-				Image:                spec.Containers[0].Image,
-				ImagePullPolicy:      spec.Containers[0].ImagePullPolicy,
-				Volumes:              spec.Volumes,
-				VolumeClaimTemplates: statefulSet.Spec.VolumeClaimTemplates,
-				Port:                 spec.Containers[0].Ports[0].ContainerPort,
-				Envs:                 spec.Containers[0].Env,
-				VolumeMounts:         spec.Containers[0].VolumeMounts,
-			},
-		})
+		newMasterBytes, _ := json.Marshal(master)
 		statefulSetNew := buildStatefulSetInstance(master)
-		statefulSetAfterSetEnv := SetEnv(*statefulSetNew, service, master)
-		if !reflect.DeepEqual(statefulSetNew, statefulSetOld) {
+		SetEnv(statefulSetNew, service, master)
+		if !bytes.Equal([]byte(statefulSet.Annotations["owner"]), newMasterBytes) {
 			o.log.Info("update reference statefulSet...")
-			statefulSetAfterSetEnv.ObjectMeta = *statefulSet.ObjectMeta.DeepCopy()
-			marshal, _ := json.Marshal(statefulSetAfterSetEnv)
-			fmt.Println(string(marshal))
-			err := o.r.Update(o.ctx, statefulSetAfterSetEnv)
+			statefulSetNew.ObjectMeta = *statefulSet.ObjectMeta.DeepCopy()
+			err := o.r.Update(o.ctx, statefulSetNew)
 			if err != nil {
 				return nil, ctrl.Result{}, err
 			} else {
-				return statefulSetOld, ctrl.Result{}, nil
+				return statefulSet, ctrl.Result{}, nil
 			}
 
+		} else {
+			return statefulSet, ctrl.Result{}, nil
 		}
 	}
-	return statefulSet, ctrl.Result{}, nil
+
 }
 func buildServiceInstance(master *v1alpha1.TLQMaster) *v1.Service {
 	ports := make([]v1.ServicePort, 1)
@@ -214,11 +202,15 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 			RestartPolicy: v1.RestartPolicyAlways,
 		},
 	}
+	masterJson, _ := json.Marshal(master)
 	statefulSet := &v12.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      master.Name,
 			Namespace: master.Namespace,
 			Labels:    defaultLabels,
+			Annotations: map[string]string{
+				"owner": string(masterJson),
+			},
 		},
 		Spec: v12.StatefulSetSpec{
 			Replicas: &defaultReplicas,
@@ -232,7 +224,7 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 	return statefulSet
 }
 
-func SetEnv(statefulSet v12.StatefulSet, service *v1.Service, master *v1alpha1.TLQMaster) *v12.StatefulSet {
+func SetEnv(statefulSet *v12.StatefulSet, service *v1.Service, master *v1alpha1.TLQMaster) {
 	envs := statefulSet.Spec.Template.Spec.Containers[0].Env
 	nodePort := service.Spec.Ports[0].NodePort
 	e1 := v1.EnvVar{
@@ -290,5 +282,4 @@ func SetEnv(statefulSet v12.StatefulSet, service *v1.Service, master *v1alpha1.T
 		envs = append(envs, e1, e2, e3, e4, e5, e6, e7, e8)
 	}
 	statefulSet.Spec.Template.Spec.Containers[0].Env = envs
-	return statefulSet.DeepCopy()
 }
