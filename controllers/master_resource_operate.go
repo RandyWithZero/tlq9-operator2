@@ -139,7 +139,7 @@ func (o *MasterOperate) CreateOrUpdateStatefulSet(master *v1alpha1.TLQMaster, se
 		})
 		statefulSetNew := buildStatefulSetInstance(master)
 		SetEnv(statefulSetNew, service, master)
-		if !reflect.DeepEqual(&statefulSetNew, &statefulSetOld) {
+		if !reflect.DeepEqual(&statefulSetNew.Spec, &statefulSetOld.Spec) {
 			o.log.Info("update reference statefulSet...")
 			statefulSetNew.ObjectMeta = *statefulSet.ObjectMeta.DeepCopy()
 			err := o.r.Update(o.ctx, statefulSetNew)
