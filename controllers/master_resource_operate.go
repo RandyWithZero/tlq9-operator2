@@ -2,15 +2,19 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/go-logr/logr"
 	v12 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"reflect"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strconv"
 	"tlq9-operator/api/v1alpha1"
@@ -77,13 +81,15 @@ func (o *MasterOperate) UpdateMasterStatus(master *v1alpha1.TLQMaster, statefulS
 	oldStatus := master.Status.Parse
 	if statefulSet.Status.ReadyReplicas == defaultReplicas {
 		master.Status.Parse = v1alpha1.Healthy
-		/*list := &v1.PodList{}
+		list := &v1.PodList{}
 		labelSelector := labels.SelectorFromSet(statefulSet.Spec.Selector.MatchLabels)
 		listOps := &client.ListOptions{
 			Namespace:     statefulSet.Namespace,
 			LabelSelector: labelSelector,
 		}
 		err := o.r.List(o.ctx, list, listOps)
+		marshal, _ := json.Marshal(list)
+		fmt.Println(string(marshal))
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -92,7 +98,7 @@ func (o *MasterOperate) UpdateMasterStatus(master *v1alpha1.TLQMaster, statefulS
 		} else {
 			pod := list.Items[0]
 			master.Status.Server = pod.Status.HostIP + ":" + strconv.Itoa(int(service.Spec.Ports[0].NodePort))
-		}*/
+		}
 	} else if statefulSet.Status.ReadyReplicas == 0 {
 		master.Status.Parse = v1alpha1.Pending
 	}
