@@ -58,8 +58,8 @@ func (o *WorkerOperate) CreateOrUpdateService(worker *v1alpha1.TLQWorker) (*v1.S
 			return nil, ctrl.Result{}, err
 		}
 	} else {
-		if service.Spec.Ports[0].Port != worker.Spec.Spec.Port {
-			service.Spec.Ports[0].Port = worker.Spec.Spec.Port
+		if service.Spec.Ports[0].Port != worker.Spec.Detail.Port {
+			service.Spec.Ports[0].Port = worker.Spec.Detail.Port
 			err := o.r.Update(o.ctx, service)
 			o.log.Info("update reference service" + worker.Name)
 			if err != nil {
@@ -145,8 +145,8 @@ func buildServiceInstanceForWorker(worker *v1alpha1.TLQWorker) *v1.Service {
 	ports := make([]v1.ServicePort, 1)
 	ports[0] = v1.ServicePort{
 		Name:       "worker-port",
-		TargetPort: intstr.FromInt(int(worker.Spec.Spec.Port)),
-		Port:       worker.Spec.Spec.Port,
+		TargetPort: intstr.FromInt(int(worker.Spec.Detail.Port)),
+		Port:       worker.Spec.Detail.Port,
 	}
 	return &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -165,14 +165,14 @@ func buildStatefulSetInstanceForWorker(worker *v1alpha1.TLQWorker) *v12.Stateful
 	containers := make([]v1.Container, 1)
 	ports := make([]v1.ContainerPort, 1)
 	ports[0] = v1.ContainerPort{
-		ContainerPort: worker.Spec.Spec.Port,
+		ContainerPort: worker.Spec.Detail.Port,
 	}
-	policy := worker.Spec.Spec.ImagePullPolicy
+	policy := worker.Spec.Detail.ImagePullPolicy
 	if &policy == nil || "" == policy {
 		policy = v1.PullAlways
 	}
-	volumes := help.BuildConfigVolume(worker.Spec.Spec)
-	dataVolume, claimTemplate := help.BuildDataVolume(worker.Spec.Spec)
+	volumes := help.BuildConfigVolume(worker.Spec.Detail)
+	dataVolume, claimTemplate := help.BuildDataVolume(worker.Spec.Detail)
 	var claimTemplates []v1.PersistentVolumeClaim
 	if dataVolume != nil {
 		volumes = append(volumes, *dataVolume)
@@ -181,11 +181,11 @@ func buildStatefulSetInstanceForWorker(worker *v1alpha1.TLQWorker) *v12.Stateful
 		claimTemplates = []v1.PersistentVolumeClaim{}
 		claimTemplates[0] = *claimTemplate
 	}
-	requirements := help.BuildResourceRequirements(worker.Spec.Spec)
-	mounts := help.BuildVolumeMounts(worker.Spec.Spec)
+	requirements := help.BuildResourceRequirements(worker.Spec.Detail)
+	mounts := help.BuildVolumeMounts(worker.Spec.Detail)
 	containers[0] = v1.Container{
 		Name:            worker.Name,
-		Image:           worker.Spec.Spec.Image,
+		Image:           worker.Spec.Detail.Image,
 		ImagePullPolicy: policy,
 		VolumeMounts:    mounts,
 		Ports:           ports,

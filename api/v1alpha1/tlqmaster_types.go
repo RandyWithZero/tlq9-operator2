@@ -110,7 +110,7 @@ type TLQMasterSpec struct {
 	//VRRPPasswd
 	VRRPPasswd string `json:"vrrpPassword,omitempty"`
 	//spec
-	Spec *Spec `json:",inline"`
+	Detail *Spec `json:"detail,omitempty"`
 }
 
 // TLQMasterStatus defines the observed state of TLQMaster

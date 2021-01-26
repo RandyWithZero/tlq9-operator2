@@ -76,7 +76,7 @@ func (r *TLQClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if master.Status.Parse != tlqv1alpha1.Healthy {
 		return ctrl.Result{}, errors.New("nameserver not ready")
 	}
-	nameserverUrl := master.Name + "/" + strconv.Itoa(int(master.Spec.Spec.Port))
+	nameserverUrl := master.Name + "/" + strconv.Itoa(int(master.Spec.Detail.Port))
 	//worker operate
 	workerList, c, err := operate.ListWorker(cluster)
 	if workerList == nil {

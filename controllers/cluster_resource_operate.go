@@ -191,7 +191,7 @@ func buildNameServerInstance(cluster *v1alpha1.TLQCluster) *v1alpha1.TLQMaster {
 		},
 		Spec: *template.DeepCopy(),
 	}
-	master.Spec.Spec = cluster.Spec.MasterTemplate.Spec.DeepCopy()
+	master.Spec.Detail = cluster.Spec.MasterTemplate.Detail.DeepCopy()
 	return master
 
 }
@@ -210,7 +210,7 @@ func buildWorkerInstance(cluster *v1alpha1.TLQCluster, index int) *v1alpha1.TLQW
 		},
 		Spec: *template.DeepCopy(),
 	}
-	worker.Spec.Spec = cluster.Spec.MasterTemplate.Spec.DeepCopy()
+	worker.Spec.Detail = cluster.Spec.MasterTemplate.Detail.DeepCopy()
 	return worker
 }
 func compareNameServerSpec(spec1 v1alpha1.TLQMasterSpec, spec2 v1alpha1.TLQMasterSpec) bool {
@@ -218,7 +218,7 @@ func compareNameServerSpec(spec1 v1alpha1.TLQMasterSpec, spec2 v1alpha1.TLQMaste
 	var2 := spec1.UserName == spec2.UserName
 	var3 := spec1.Password == spec2.Password
 	var4 := spec1.AdvertiseInterval == spec2.AdvertiseInterval
-	var5 := compareSpec(spec1.Spec, spec2.Spec)
+	var5 := compareSpec(spec1.Detail, spec2.Detail)
 	return var1 && var2 && var3 && var4 && var5
 }
 func compareWorkerSpec(spec1 v1alpha1.TLQWorkerSpec, spec2 v1alpha1.TLQWorkerSpec) bool {
@@ -228,7 +228,7 @@ func compareWorkerSpec(spec1 v1alpha1.TLQWorkerSpec, spec2 v1alpha1.TLQWorkerSpe
 	var4 := spec1.RequestServiceNum == spec2.RequestServiceNum
 	var5 := spec1.ResponseServiceNum == spec2.ResponseServiceNum
 	var6 := spec1.WorkRootDir == spec2.WorkRootDir
-	var7 := compareSpec(spec1.Spec, spec2.Spec)
+	var7 := compareSpec(spec1.Detail, spec2.Detail)
 	return var1 && var2 && var3 && var4 && var5 && var6 && var7
 }
 func compareSpec(spec1 *v1alpha1.Spec, spec2 *v1alpha1.Spec) bool {

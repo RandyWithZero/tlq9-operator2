@@ -62,8 +62,8 @@ func (o *MasterOperate) CreateOrUpdateService(master *v1alpha1.TLQMaster) (*v1.S
 			return nil, ctrl.Result{}, err
 		}
 	} else {
-		if service.Spec.Ports[0].Port != master.Spec.Spec.Port {
-			service.Spec.Ports[0].Port = master.Spec.Spec.Port
+		if service.Spec.Ports[0].Port != master.Spec.Detail.Port {
+			service.Spec.Ports[0].Port = master.Spec.Detail.Port
 			err := o.r.Update(o.ctx, service)
 			o.log.Info("update reference service...")
 			if err != nil {
@@ -149,8 +149,8 @@ func buildServiceInstance(master *v1alpha1.TLQMaster) *v1.Service {
 	ports := make([]v1.ServicePort, 1)
 	ports[0] = v1.ServicePort{
 		Name:       "master-port",
-		TargetPort: intstr.FromInt(int(master.Spec.Spec.Port)),
-		Port:       master.Spec.Spec.Port,
+		TargetPort: intstr.FromInt(int(master.Spec.Detail.Port)),
+		Port:       master.Spec.Detail.Port,
 	}
 	return &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -169,15 +169,15 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 	containers := make([]v1.Container, 1)
 	ports := make([]v1.ContainerPort, 1)
 	ports[0] = v1.ContainerPort{
-		ContainerPort: master.Spec.Spec.Port,
+		ContainerPort: master.Spec.Detail.Port,
 	}
-	policy := master.Spec.Spec.ImagePullPolicy
+	policy := master.Spec.Detail.ImagePullPolicy
 	if &policy == nil || "" == policy {
 		policy = v1.PullAlways
 	}
 
-	volumes := help.BuildConfigVolume(master.Spec.Spec)
-	dataVolume, claimTemplate := help.BuildDataVolume(master.Spec.Spec)
+	volumes := help.BuildConfigVolume(master.Spec.Detail)
+	dataVolume, claimTemplate := help.BuildDataVolume(master.Spec.Detail)
 	var claimTemplates []v1.PersistentVolumeClaim
 	if volumes == nil && dataVolume != nil {
 		volumes = []v1.Volume{*dataVolume}
@@ -189,11 +189,11 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 		claimTemplates = []v1.PersistentVolumeClaim{}
 		claimTemplates[0] = *claimTemplate
 	}
-	requirements := help.BuildResourceRequirements(master.Spec.Spec)
-	mounts := help.BuildVolumeMounts(master.Spec.Spec)
+	requirements := help.BuildResourceRequirements(master.Spec.Detail)
+	mounts := help.BuildVolumeMounts(master.Spec.Detail)
 	containers[0] = v1.Container{
 		Name:            master.Name,
-		Image:           master.Spec.Spec.Image,
+		Image:           master.Spec.Detail.Image,
 		ImagePullPolicy: policy,
 		VolumeMounts:    mounts,
 		Ports:           ports,
