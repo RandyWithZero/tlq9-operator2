@@ -63,7 +63,7 @@ type Spec struct {
 	Resources *Resources `json:"resources,omitempty"`
 }
 
-func (spec Spec) DeepCopy() *Spec {
+func (spec *Spec) DeepCopy() *Spec {
 	persistentSpec := spec.DataPersistentSpec
 	var dataPersistentSpec *DataPersistentSpec
 	if persistentSpec != nil {
