@@ -8,6 +8,9 @@ import (
 )
 
 func BuildDataVolume(spec *v1alpha1.Spec) (*v1.Volume, *v1.PersistentVolumeClaim) {
+	if spec == nil || spec.DataPersistentSpec == nil {
+		return nil, nil
+	}
 	switch spec.DataPersistentSpec.DataMountType {
 	case v1alpha1.HostPath:
 		return &v1.Volume{
