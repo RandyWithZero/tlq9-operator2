@@ -1,7 +1,0 @@
-apiVersion: tlq.tongtech.com/v1alpha1
-kind: TLQCluster
-metadata:
-  name: tlqcluster-sample
-spec:
-  workerSize: 1
-  enableWorkerBackup: false

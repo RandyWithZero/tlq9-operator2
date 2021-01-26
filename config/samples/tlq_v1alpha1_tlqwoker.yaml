@@ -1,7 +1,0 @@
-apiVersion: tlq.tongtech.com/v1alpha1
-kind: TLQWoker
-metadata:
-  name: tlqwoker-sample
-spec:
-  # Add fields here
-  foo: bar

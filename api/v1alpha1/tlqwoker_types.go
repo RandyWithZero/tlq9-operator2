@@ -32,7 +32,7 @@ type TLQWorkerSpec struct {
 	//IsAffinity
 	IsAffinity int `json:"isAffinity,omitempty"`
 	//RegisterStatus: 0 enable register ; 1 disable register
-	RegisterStatus int `json:"isAffinity,omitempty"`
+	RegisterStatus int `json:"registerStatus,omitempty"`
 	//RequestServiceNum
 	RequestServiceNum int `json:"requestServiceNum,omitempty"`
 	//ResponseServiceNum

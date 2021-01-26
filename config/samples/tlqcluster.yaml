@@ -1,0 +1,24 @@
+apiVersion: tlq.tongtech.com/v1alpha1
+kind: TLQCluster
+metadata:
+  name: tlqcluster-sample
+spec:
+  workerSize: 2
+  enableWorkerBackup: false
+  enableMasterBackup: false
+  masterTemplate:
+    username: abc
+    password: abc
+    advertiseInterval: 5
+    vrrpPassword: 123abc567efg
+    image: 168.1.9.1/pub/nginx:1.19.1
+    port: 80
+  workerTemplate:
+    workRootDir: /root
+    logLevel: 3
+    isAffinity: 1
+    registerStatus: 1
+    requestServiceNum: 12
+    responseServiceNum: 12
+    image: 168.1.9.1/pub/nginx:1.19.1
+    port: 80
