@@ -114,11 +114,11 @@ func BuildVolumeMounts(spec *v1alpha1.Spec) []v1.VolumeMount {
 	}
 	return mounts
 }
-func BuildResourceRequirements(spec *v1alpha1.Spec) v1.ResourceRequirements {
-	if spec == nil {
-		return v1.ResourceRequirements{}
+func BuildResourceRequirements(spec *v1alpha1.Spec) *v1.ResourceRequirements {
+	if spec == nil || spec.Resources == nil {
+		return nil
 	}
-	return v1.ResourceRequirements{
+	return &v1.ResourceRequirements{
 		Limits: v1.ResourceList{
 			v1.ResourceCPU:    spec.Resources.LimitCpu,
 			v1.ResourceMemory: spec.Resources.LimitMemory,
