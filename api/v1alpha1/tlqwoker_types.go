@@ -23,42 +23,56 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// TLQWokerSpec defines the desired state of TLQWoker
-type TLQWokerSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of TLQWoker. Edit tlqwoker_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+// TLQWorkerSpec defines the desired state of TLQWorker
+type TLQWorkerSpec struct {
+	//WorkRootDir: worker root dir
+	WorkRootDir string `json:"workRootDir,omitempty"`
+	//LogLevel: log level
+	LogLevel int `json:"logLevel,omitempty"`
+	//IsAffinity
+	IsAffinity int `json:"isAffinity,omitempty"`
+	//RegisterStatus: 0 enable register ; 1 disable register
+	RegisterStatus int `json:"isAffinity,omitempty"`
+	//RequestServiceNum
+	RequestServiceNum int `json:"requestServiceNum,omitempty"`
+	//ResponseServiceNum
+	ResponseServiceNum int `json:"responseServiceNum,omitempty"`
+	//spec
+	Spec Spec `json:",inline"`
 }
 
-// TLQWokerStatus defines the observed state of TLQWoker
-type TLQWokerStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+// TLQWorkerStatus defines the observed state of TLQWorker
+type TLQWorkerStatus struct {
+	//parse
+	Parse Status `json:"parse,omitempty"`
+	// worker server address
+	Server string `json:"server,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+//+kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.parse"
+//+kubebuilder:printcolumn:name="Worker-Address",type="string",JSONPath=".status.server"
 
-// TLQWoker is the Schema for the tlqwokers API
-type TLQWoker struct {
+// TLQWorker is the Schema for the tlqworkers API
+type TLQWorker struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   TLQWokerSpec   `json:"spec,omitempty"`
-	Status TLQWokerStatus `json:"status,omitempty"`
+	Spec   TLQWorkerSpec   `json:"spec,omitempty"`
+	Status TLQWorkerStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// TLQWokerList contains a list of TLQWoker
-type TLQWokerList struct {
+// TLQWorkerList contains a list of TLQWorker
+type TLQWorkerList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []TLQWoker `json:"items"`
+	Items           []TLQWorker `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&TLQWoker{}, &TLQWokerList{})
+	SchemeBuilder.Register(&TLQWorker{}, &TLQWorkerList{})
 }

@@ -16,6 +16,6 @@ resources:
 - api:
     crdVersion: v1
   group: tlq
-  kind: TLQWoker
+  kind: TLQWorker
   version: v1alpha1
 version: 3-alpha

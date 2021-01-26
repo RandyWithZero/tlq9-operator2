@@ -20,25 +20,59 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type MountType string
+
+var (
+	HostPath            MountType = "hostPath"
+	VolumeChaimTemplate MountType = "volumeChaimTemplate"
+)
+
+type Status string
+
+var (
+	Healthy   Status = "Healthy"
+	UnHealthy Status = "UnHealthy"
+	Pending   Status = "Pending"
+	//Fail      Status = "Fail"
+)
+
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // TLQClusterSpec defines the desired state of TLQCluster
 type TLQClusterSpec struct {
-	// worker size
-	WorkerSize uint8 `json:"workerSize,omitempty"`
+	//worker size
+	WorkerSize int `json:"workerSize,omitempty"`
 	//enable worker backup
 	EnableWorkerBackup bool `json:"enableWorkerBackup,omitempty"`
+	//enable master backup
+	EnableMasterBackup bool `json:"enableMasterBackup,omitempty"`
+	//MasterTemplate
+	MasterTemplate TLQMasterSpec `json:"masterTemplate,omitempty"`
+	//WorkerTemplate
+	WorkerTemplate TLQWorkerSpec `json:"workerTemplate,omitempty"`
 }
 
 // TLQClusterStatus defines the observed state of TLQCluster
 type TLQClusterStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	//TotalWorkerCount
+	TotalWorkerCount int `json:"totalWorkerCount,omitempty"`
+	//ReadyWorkerCount
+	ReadyWorkerCount int `json:"readyWorkerCount,omitempty"`
+	//ReadyWorkerServer
+	ReadyWorkerServer map[string]string `json:"readyWorkerServer,omitempty"`
+	//ReadyMasterServer
+	ReadyMasterServer string `json:"readyMasterServer,omitempty"`
+	//Parse
+	Parse Status `json:"parse,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+//+kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.parse"
+//+kubebuilder:printcolumn:name="Worker-Count",type="integer",JSONPath=".status.totalWorkerCount"
+//+kubebuilder:printcolumn:name="Ready",type="integer",JSONPath=".status.readyWorkerCount"
 
 // TLQCluster is the Schema for the tlqclusters API
 type TLQCluster struct {

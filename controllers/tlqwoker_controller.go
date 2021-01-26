@@ -18,71 +18,75 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-logr/logr"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/util/workqueue"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	tlqv1alpha1 "tlq9-operator/api/v1alpha1"
 )
 
-var _ handler.EventHandler = &TLQEventHandler{}
-
-type TLQEventHandler struct {
-}
-
-func (e *TLQEventHandler) Create(event.CreateEvent, workqueue.RateLimitingInterface) {
-	fmt.Println("Create-------------------------------------------")
-}
-
-func (e *TLQEventHandler) Update(event.UpdateEvent, workqueue.RateLimitingInterface) {
-	fmt.Println("Update-------------------------------------------")
-}
-func (e *TLQEventHandler) Delete(event.DeleteEvent, workqueue.RateLimitingInterface) {
-	fmt.Println("Delete-------------------------------------------")
-}
-
-// Generic is called in response to an event of an unknown type or a synthetic event triggered as a cron or
-// external trigger request - e.g. reconcile Autoscaling, or a Webhook.
-func (e *TLQEventHandler) Generic(event.GenericEvent, workqueue.RateLimitingInterface) {
-	fmt.Println("Generic-------------------------------------------")
-}
-
-// TLQWokerReconciler reconciles a TLQWoker object
-type TLQWokerReconciler struct {
+// TLQWorkerReconciler reconciles a TLQWorker object
+type TLQWorkerReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=tlq.tongtech.com,resources=tlqwokers,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=tlq.tongtech.com,resources=tlqwokers/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=tlq.tongtech.com,resources=tlqwokers/finalizers,verbs=update
+//+kubebuilder:rbac:groups=tlq.tongtech.com,resources=tlqworkers,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=tlq.tongtech.com,resources=tlqworkers/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=tlq.tongtech.com,resources=tlqworkers/finalizers,verbs=update
+//+kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="apps",resources=statefulsets,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the TLQWoker object against the actual cluster state, and then
+// the TLQWorker object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.0/pkg/reconcile
-func (r *TLQWokerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-
-	log := r.Log.WithValues("tlqwoker", req.NamespacedName)
-	log.Info("TLQWokerReconciler=========================================================")
-	// your logic here
-
-	return ctrl.Result{}, nil
+func (r *TLQWorkerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := r.Log.WithValues("tlqworker", req.NamespacedName)
+	//do something
+	operate := &WorkerOperate{
+		log: log,
+		r:   r,
+		ctx: ctx,
+		req: req,
+	}
+	//get TLQWorker Resource
+	worker, result, err := operate.GetWorker()
+	if worker == nil {
+		return result, err
+	}
+	//service
+	svc, svcResult, err := operate.CreateOrUpdateService(worker)
+	service := &v1.Service{}
+	if svc == nil {
+		return svcResult, err
+	} else {
+		err := r.Get(ctx, types.NamespacedName{Name: worker.Name, Namespace: worker.Namespace}, service)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+	//get reference statefulSet
+	stateful, c, err := operate.CreateOrUpdateStatefulSet(worker, service)
+	if stateful == nil {
+		return c, err
+	}
+	//update  TLQMaster status
+	re, err := operate.UpdateWorkerStatus(worker, stateful, service)
+	return re, err
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *TLQWokerReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *TLQWorkerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&tlqv1alpha1.TLQWoker{}).
+		For(&tlqv1alpha1.TLQWorker{}).
 		Complete(r)
 }

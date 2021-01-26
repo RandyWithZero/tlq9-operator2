@@ -18,11 +18,11 @@ package controllers
 
 import (
 	"context"
-
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strconv"
 
 	tlqv1alpha1 "tlq9-operator/api/v1alpha1"
 )
@@ -37,10 +37,11 @@ type TLQClusterReconciler struct {
 //+kubebuilder:rbac:groups=tlq.tongtech.com,resources=tlqclusters,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=tlq.tongtech.com,resources=tlqclusters/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=tlq.tongtech.com,resources=tlqclusters/finalizers,verbs=update
+//+kubebuilder:rbac:groups=tlq.tongtech.com,resources=tlqmasters,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=tlq.tongtech.com,resources=tlqworkers,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
 // the TLQCluster object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
@@ -49,15 +50,73 @@ type TLQClusterReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.0/pkg/reconcile
 func (r *TLQClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("tlqcluster", req.NamespacedName)
+	//do something
+	operate := &ClusterOperate{
+		log: log,
+		r:   r,
+		ctx: ctx,
+		req: req,
+	}
+	//get tlqCluster Resource
+	cluster, result, err := operate.GetCluster()
+	if cluster == nil {
+		return result, err
+	}
+	//master operate
+	master, masterResult, err := operate.CreateOrUpdateTlqMaster(cluster)
+	if master == nil {
+		return masterResult, err
+	}
 
-	// your logic here
-    log.Info("TLQClusterReconciler=========================================================================")
-	return ctrl.Result{}, nil
+	nameserverUrl := master.Name + "/" + strconv.Itoa(int(master.Spec.Spec.Port))
+	//worker operate
+	workerList, c, err := operate.ListWorker(cluster)
+	if workerList == nil {
+		return c, err
+	}
+	if len(workerList.Items) == 0 {
+		worker, workerResult, err := operate.CreateOrUpdateTlqWorker(cluster, 0, nameserverUrl)
+		if worker == nil {
+			return workerResult, err
+		}
+	} else if 0 < len(workerList.Items) && len(workerList.Items) < cluster.Spec.WorkerSize+1 {
+		size := cluster.Spec.WorkerSize
+		indexList := make([]int, size)
+		for _, item := range workerList.Items {
+			index, _ := strconv.Atoi(item.Labels["index"])
+			indexList[index] = 1
+		}
+		for i := range indexList {
+			if indexList[i] == 0 {
+				worker, workerResult, err := operate.CreateOrUpdateTlqWorker(cluster, i, nameserverUrl)
+				if worker == nil {
+					return workerResult, err
+				}
+			}
+			break
+		}
+	} else {
+		for _, item := range workerList.Items {
+			index, _ := strconv.Atoi(item.Labels["index"])
+			if index > cluster.Spec.WorkerSize {
+				c, err := operate.DeleteWorker(&item)
+				if err != nil {
+					return c, err
+				}
+
+			}
+		}
+
+	}
+	//update cluster status
+	return operate.updateClusterStatus(cluster, master, workerList)
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *TLQClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&tlqv1alpha1.TLQCluster{}).
+		Owns(&tlqv1alpha1.TLQWorker{}).
+		Owns(&tlqv1alpha1.TLQMaster{}).
 		Complete(r)
 }

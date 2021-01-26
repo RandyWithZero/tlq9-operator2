@@ -17,11 +17,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strconv"
 	"tlq9-operator/api/v1alpha1"
+	"tlq9-operator/help"
 )
 
 var (
 	defaultReplicas int32 = 1
-	defaultLabels         = map[string]string{"role": "master"}
 )
 
 type MasterOperate struct {
@@ -62,8 +62,8 @@ func (o *MasterOperate) CreateOrUpdateService(master *v1alpha1.TLQMaster) (*v1.S
 			return nil, ctrl.Result{}, err
 		}
 	} else {
-		if service.Spec.Ports[0].Port != master.Spec.Port {
-			service.Spec.Ports[0].Port = master.Spec.Port
+		if service.Spec.Ports[0].Port != master.Spec.Spec.Port {
+			service.Spec.Ports[0].Port = master.Spec.Spec.Port
 			err := o.r.Update(o.ctx, service)
 			o.log.Info("update reference service...")
 			if err != nil {
@@ -91,13 +91,8 @@ func (o *MasterOperate) UpdateMasterStatus(master *v1alpha1.TLQMaster, statefulS
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		if len(list.Items) == 0 {
-			master.Status.Parse = v1alpha1.Fail
-			master.Status.Server = ""
-		} else {
-			pod := list.Items[0]
-			master.Status.Server = pod.Status.HostIP + ":" + strconv.Itoa(int(service.Spec.Ports[0].NodePort))
-		}
+		pod := list.Items[0]
+		master.Status.Server = pod.Status.HostIP + ":" + strconv.Itoa(int(service.Spec.Ports[0].NodePort))
 	} else if statefulSet.Status.ReadyReplicas == 0 {
 		master.Status.Parse = v1alpha1.Pending
 		master.Status.Server = ""
@@ -141,7 +136,7 @@ func (o *MasterOperate) CreateOrUpdateStatefulSet(master *v1alpha1.TLQMaster, se
 			if err != nil {
 				return nil, ctrl.Result{}, err
 			} else {
-				return statefulSet, ctrl.Result{}, nil
+				return statefulSetNew, ctrl.Result{}, nil
 			}
 
 		} else {
@@ -154,18 +149,17 @@ func buildServiceInstance(master *v1alpha1.TLQMaster) *v1.Service {
 	ports := make([]v1.ServicePort, 1)
 	ports[0] = v1.ServicePort{
 		Name:       "master-port",
-		TargetPort: intstr.FromInt(int(master.Spec.Port)),
-		Port:       master.Spec.Port,
+		TargetPort: intstr.FromInt(int(master.Spec.Spec.Port)),
+		Port:       master.Spec.Spec.Port,
 	}
-	defaultLabels["master"] = master.Name
 	return &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      master.Name,
 			Namespace: master.Namespace,
-			Labels:    defaultLabels,
+			Labels:    master.Labels,
 		},
 		Spec: v1.ServiceSpec{
-			Selector: defaultLabels,
+			Selector: master.Labels,
 			Type:     v1.ServiceTypeNodePort,
 			Ports:    ports,
 		},
@@ -175,45 +169,51 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 	containers := make([]v1.Container, 1)
 	ports := make([]v1.ContainerPort, 1)
 	ports[0] = v1.ContainerPort{
-		ContainerPort: master.Spec.Port,
+		ContainerPort: master.Spec.Spec.Port,
 	}
-	policy := master.Spec.ImagePullPolicy
-	if "" == policy {
+	policy := master.Spec.Spec.ImagePullPolicy
+	if &policy == nil || "" == policy {
 		policy = v1.PullAlways
 	}
+
+	volumes := help.BuildConfigVolume(master.Spec.Spec)
+	dataVolume, claimTemplate := help.BuildDataVolume(master.Spec.Spec)
+	var claimTemplates []v1.PersistentVolumeClaim
+	if dataVolume != nil {
+		volumes = append(volumes, *dataVolume)
+	}
+	if claimTemplate != nil {
+		claimTemplates = []v1.PersistentVolumeClaim{}
+		claimTemplates[0] = *claimTemplate
+	}
+	requirements := help.BuildResourceRequirements(master.Spec.Spec)
+	mounts := help.BuildVolumeMounts(master.Spec.Spec)
 	containers[0] = v1.Container{
 		Name:            master.Name,
-		Image:           master.Spec.Image,
+		Image:           master.Spec.Spec.Image,
 		ImagePullPolicy: policy,
-		VolumeMounts:    master.Spec.VolumeMounts,
+		VolumeMounts:    mounts,
 		Ports:           ports,
-		Env:             master.Spec.Envs,
-		Resources:       master.Spec.Resource,
+		Resources:       requirements,
 	}
-	defaultLabels["master"] = master.Name
 	template := v1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      master.Name,
 			Namespace: master.Namespace,
-			Labels:    defaultLabels,
+			Labels:    master.Labels,
 		},
 		Spec: v1.PodSpec{
-			Volumes:       master.Spec.Volumes,
+			Volumes:       volumes,
 			Containers:    containers,
 			RestartPolicy: v1.RestartPolicyAlways,
 		},
 	}
-	/*statefulSetLabels := map[string]string{}
-	formatInt := strconv.FormatInt(time.Now().Unix(), 10)
-	statefulSetLabels["update"] = formatInt
-	statefulSetLabels["master"] = master.Name
-	statefulSetLabels["role"] = "master"*/
 	masterJson, _ := json.Marshal(master.Spec)
 	statefulSet := &v12.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      master.Name,
 			Namespace: master.Namespace,
-			Labels:    defaultLabels,
+			Labels:    master.Labels,
 			Annotations: map[string]string{
 				"owner-spec": string(masterJson),
 			},
@@ -221,10 +221,10 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 		Spec: v12.StatefulSetSpec{
 			Replicas: &defaultReplicas,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: defaultLabels,
+				MatchLabels: master.Labels,
 			},
 			Template:             template,
-			VolumeClaimTemplates: master.Spec.VolumeClaimTemplates,
+			VolumeClaimTemplates: claimTemplates,
 		},
 	}
 	return statefulSet

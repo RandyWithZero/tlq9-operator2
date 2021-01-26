@@ -94,12 +94,12 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "TLQMaster")
 		os.Exit(1)
 	}
-	if err = (&controllers.TLQWokerReconciler{
+	if err = (&controllers.TLQWorkerReconciler{
 		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("TLQWoker"),
+		Log:    ctrl.Log.WithName("controllers").WithName("TLQWorker"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "TLQWoker")
+		setupLog.Error(err, "unable to create controller", "controller", "TLQWorker")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
