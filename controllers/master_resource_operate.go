@@ -176,8 +176,8 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 		policy = v1.PullAlways
 	}
 
-	volumes := help.BuildConfigVolume(*master.Spec.Spec)
-	dataVolume, claimTemplate := help.BuildDataVolume(*master.Spec.Spec)
+	volumes := help.BuildConfigVolume(master.Spec.Spec)
+	dataVolume, claimTemplate := help.BuildDataVolume(master.Spec.Spec)
 	var claimTemplates []v1.PersistentVolumeClaim
 	if dataVolume != nil {
 		volumes = append(volumes, *dataVolume)
@@ -186,8 +186,8 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 		claimTemplates = []v1.PersistentVolumeClaim{}
 		claimTemplates[0] = *claimTemplate
 	}
-	requirements := help.BuildResourceRequirements(*master.Spec.Spec)
-	mounts := help.BuildVolumeMounts(*master.Spec.Spec)
+	requirements := help.BuildResourceRequirements(master.Spec.Spec)
+	mounts := help.BuildVolumeMounts(master.Spec.Spec)
 	containers[0] = v1.Container{
 		Name:            master.Name,
 		Image:           master.Spec.Spec.Image,

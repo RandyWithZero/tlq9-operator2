@@ -176,7 +176,7 @@ func (o *ClusterOperate) updateClusterStatus(cluster *v1alpha1.TLQCluster, maste
 func buildNameServerInstance(cluster *v1alpha1.TLQCluster) *v1alpha1.TLQMaster {
 	masterName := cluster.Name + "-" + NameServerSign
 	template := cluster.Spec.MasterTemplate
-	return &v1alpha1.TLQMaster{
+	master := &v1alpha1.TLQMaster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      masterName,
 			Namespace: cluster.Namespace,
@@ -187,11 +187,14 @@ func buildNameServerInstance(cluster *v1alpha1.TLQCluster) *v1alpha1.TLQMaster {
 		},
 		Spec: *template.DeepCopy(),
 	}
+	master.Spec.Spec = cluster.Spec.MasterTemplate.Spec.DeepCopy()
+	return master
+
 }
 func buildWorkerInstance(cluster *v1alpha1.TLQCluster, index int) *v1alpha1.TLQWorker {
 	workerName := cluster.Name + "-" + WorkerSign + "-" + strconv.Itoa(index)
 	template := cluster.Spec.WorkerTemplate
-	return &v1alpha1.TLQWorker{
+	worker := &v1alpha1.TLQWorker{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      workerName,
 			Namespace: cluster.Namespace,
@@ -203,13 +206,15 @@ func buildWorkerInstance(cluster *v1alpha1.TLQCluster, index int) *v1alpha1.TLQW
 		},
 		Spec: *template.DeepCopy(),
 	}
+	worker.Spec.Spec = cluster.Spec.MasterTemplate.Spec.DeepCopy()
+	return worker
 }
 func compareNameServerSpec(spec1 v1alpha1.TLQMasterSpec, spec2 v1alpha1.TLQMasterSpec) bool {
 	var1 := spec1.VRRPPasswd == spec2.VRRPPasswd
 	var2 := spec1.UserName == spec2.UserName
 	var3 := spec1.Password == spec2.Password
 	var4 := spec1.AdvertiseInterval == spec2.AdvertiseInterval
-	var5 := compareSpec(*spec1.Spec, *spec2.Spec)
+	var5 := compareSpec(spec1.Spec, spec2.Spec)
 	return var1 && var2 && var3 && var4 && var5
 }
 func compareWorkerSpec(spec1 v1alpha1.TLQWorkerSpec, spec2 v1alpha1.TLQWorkerSpec) bool {
@@ -219,7 +224,7 @@ func compareWorkerSpec(spec1 v1alpha1.TLQWorkerSpec, spec2 v1alpha1.TLQWorkerSpe
 	var4 := spec1.RequestServiceNum == spec2.RequestServiceNum
 	var5 := spec1.ResponseServiceNum == spec2.ResponseServiceNum
 	var6 := spec1.WorkRootDir == spec2.WorkRootDir
-	var7 := compareSpec(*spec1.Spec, *spec2.Spec)
+	var7 := compareSpec(spec1.Spec, spec2.Spec)
 	return var1 && var2 && var3 && var4 && var5 && var6 && var7
 }
 func compareSpec(spec1 v1alpha1.Spec, spec2 v1alpha1.Spec) bool {

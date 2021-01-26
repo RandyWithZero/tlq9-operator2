@@ -63,6 +63,39 @@ type Spec struct {
 	Resources *Resources `json:"resources,omitempty"`
 }
 
+func (spec Spec) DeepCopy() Spec {
+	persistentSpec := spec.DataPersistentSpec
+	var dataPersistentSpec *DataPersistentSpec
+	if persistentSpec != nil {
+		dataPersistentSpec = &DataPersistentSpec{
+			DataDir:       persistentSpec.DataDir,
+			DataMountType: persistentSpec.DataMountType,
+			HostPath:      persistentSpec.HostPath,
+			AccessMode:    persistentSpec.AccessMode,
+			DataStorage:   persistentSpec.DataStorage.DeepCopy(),
+		}
+	}
+	resourcesSpec := spec.Resources
+	var resources *Resources
+	if persistentSpec != nil {
+		resources = &Resources{
+			LimitMemory:   resourcesSpec.LimitMemory.DeepCopy(),
+			LimitCpu:      resourcesSpec.LimitCpu.DeepCopy(),
+			RequestMemory: resourcesSpec.RequestMemory.DeepCopy(),
+			RequestCpu:    resourcesSpec.RequestCpu.DeepCopy(),
+		}
+	}
+	return Spec{
+		Image:              spec.Image,
+		Port:               spec.Port,
+		ImagePullPolicy:    spec.ImagePullPolicy,
+		ZoneConfigMapName:  spec.ZoneConfigMapName,
+		TopicConfigMapName: spec.TopicConfigMapName,
+		DataPersistentSpec: dataPersistentSpec,
+		Resources:          resources,
+	}
+}
+
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
@@ -77,7 +110,7 @@ type TLQMasterSpec struct {
 	//VRRPPasswd
 	VRRPPasswd string `json:"vrrpPassword,omitempty"`
 	//spec
-	Spec *Spec `json:",inline"`
+	Spec Spec `json:",inline"`
 }
 
 // TLQMasterStatus defines the observed state of TLQMaster
