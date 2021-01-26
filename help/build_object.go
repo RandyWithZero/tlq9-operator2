@@ -7,7 +7,7 @@ import (
 	"tlq9-operator/api/v1alpha1"
 )
 
-func BuildDataVolume(spec v1alpha1.Spec) (*v1.Volume, *v1.PersistentVolumeClaim) {
+func BuildDataVolume(spec *v1alpha1.Spec) (*v1.Volume, *v1.PersistentVolumeClaim) {
 	switch spec.DataPersistentSpec.DataMountType {
 	case v1alpha1.HostPath:
 		return &v1.Volume{
@@ -38,7 +38,10 @@ func BuildDataVolume(spec v1alpha1.Spec) (*v1.Volume, *v1.PersistentVolumeClaim)
 		return nil, nil
 	}
 }
-func BuildConfigVolume(spec v1alpha1.Spec) []v1.Volume {
+func BuildConfigVolume(spec *v1alpha1.Spec) []v1.Volume {
+	if spec == nil {
+		return nil
+	}
 	volumes := make([]v1.Volume, 0)
 	if &spec.TopicConfigMapName != nil && spec.TopicConfigMapName != "" {
 		volumes = append(volumes, v1.Volume{
@@ -78,7 +81,10 @@ func BuildConfigVolume(spec v1alpha1.Spec) []v1.Volume {
 	}
 	return volumes
 }
-func BuildVolumeMounts(spec v1alpha1.Spec) []v1.VolumeMount {
+func BuildVolumeMounts(spec *v1alpha1.Spec) []v1.VolumeMount {
+	if spec == nil {
+		return nil
+	}
 	mounts := make([]v1.VolumeMount, 0)
 	if spec.DataPersistentSpec != nil {
 		data := v1.VolumeMount{
@@ -105,7 +111,10 @@ func BuildVolumeMounts(spec v1alpha1.Spec) []v1.VolumeMount {
 	}
 	return mounts
 }
-func BuildResourceRequirements(spec v1alpha1.Spec) v1.ResourceRequirements {
+func BuildResourceRequirements(spec *v1alpha1.Spec) v1.ResourceRequirements {
+	if spec == nil {
+		return v1.ResourceRequirements{}
+	}
 	return v1.ResourceRequirements{
 		Limits: v1.ResourceList{
 			v1.ResourceCPU:    spec.Resources.LimitCpu,

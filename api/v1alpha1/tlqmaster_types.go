@@ -63,7 +63,7 @@ type Spec struct {
 	Resources *Resources `json:"resources,omitempty"`
 }
 
-func (spec Spec) DeepCopy() Spec {
+func (spec Spec) DeepCopy() *Spec {
 	persistentSpec := spec.DataPersistentSpec
 	var dataPersistentSpec *DataPersistentSpec
 	if persistentSpec != nil {
@@ -85,7 +85,7 @@ func (spec Spec) DeepCopy() Spec {
 			RequestCpu:    resourcesSpec.RequestCpu.DeepCopy(),
 		}
 	}
-	return Spec{
+	return &Spec{
 		Image:              spec.Image,
 		Port:               spec.Port,
 		ImagePullPolicy:    spec.ImagePullPolicy,
@@ -110,7 +110,7 @@ type TLQMasterSpec struct {
 	//VRRPPasswd
 	VRRPPasswd string `json:"vrrpPassword,omitempty"`
 	//spec
-	Spec Spec `json:",inline"`
+	Spec *Spec `json:",inline"`
 }
 
 // TLQMasterStatus defines the observed state of TLQMaster

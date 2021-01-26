@@ -227,7 +227,7 @@ func compareWorkerSpec(spec1 v1alpha1.TLQWorkerSpec, spec2 v1alpha1.TLQWorkerSpe
 	var7 := compareSpec(spec1.Spec, spec2.Spec)
 	return var1 && var2 && var3 && var4 && var5 && var6 && var7
 }
-func compareSpec(spec1 v1alpha1.Spec, spec2 v1alpha1.Spec) bool {
+func compareSpec(spec1 *v1alpha1.Spec, spec2 *v1alpha1.Spec) bool {
 	var1 := spec1.ZoneConfigMapName == spec2.ZoneConfigMapName
 	var2 := spec1.TopicConfigMapName == spec2.TopicConfigMapName
 	var3 := spec1.Port == spec2.Port

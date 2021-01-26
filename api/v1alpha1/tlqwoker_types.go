@@ -38,7 +38,7 @@ type TLQWorkerSpec struct {
 	//ResponseServiceNum
 	ResponseServiceNum int `json:"responseServiceNum,omitempty"`
 	//spec
-	Spec Spec `json:",inline"`
+	Spec *Spec `json:",inline"`
 }
 
 // TLQWorkerStatus defines the observed state of TLQWorker

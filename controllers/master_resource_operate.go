@@ -179,7 +179,10 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 	volumes := help.BuildConfigVolume(master.Spec.Spec)
 	dataVolume, claimTemplate := help.BuildDataVolume(master.Spec.Spec)
 	var claimTemplates []v1.PersistentVolumeClaim
-	if dataVolume != nil {
+	if volumes == nil && dataVolume != nil {
+		volumes = []v1.Volume{*dataVolume}
+	}
+	if dataVolume != nil && volumes != nil {
 		volumes = append(volumes, *dataVolume)
 	}
 	if claimTemplate != nil {
