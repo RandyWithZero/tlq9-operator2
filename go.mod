@@ -11,5 +11,3 @@ require (
 	k8s.io/client-go v0.19.2
 	sigs.k8s.io/controller-runtime v0.7.0
 )
-
-replace tlq9-operator/help => ./help

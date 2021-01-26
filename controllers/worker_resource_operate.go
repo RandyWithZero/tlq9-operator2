@@ -16,8 +16,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strconv"
+	"tlq9-operator/api/help"
 	"tlq9-operator/api/v1alpha1"
-	"tlq9-operator/help"
 )
 
 type WorkerOperate struct {
