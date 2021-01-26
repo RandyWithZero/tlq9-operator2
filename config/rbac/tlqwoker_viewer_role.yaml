@@ -1,13 +1,13 @@
-# permissions for end users to view tlqwokers.
+# permissions for end users to view tlqworkers.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: tlqwoker-viewer-role
+  name: tlqworker-viewer-role
 rules:
 - apiGroups:
   - tlq.tongtech.com
   resources:
-  - tlqwokers
+  - tlqworkers
   verbs:
   - get
   - list
@@ -15,6 +15,6 @@ rules:
 - apiGroups:
   - tlq.tongtech.com
   resources:
-  - tlqwokers/status
+  - tlqworkers/status
   verbs:
   - get

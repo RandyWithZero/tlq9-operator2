@@ -1,13 +1,13 @@
-# permissions for end users to edit tlqwokers.
+# permissions for end users to edit tlqworkers.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: tlqwoker-editor-role
+  name: tlqworker-editor-role
 rules:
 - apiGroups:
   - tlq.tongtech.com
   resources:
-  - tlqwokers
+  - tlqworkers
   verbs:
   - create
   - delete
@@ -19,6 +19,6 @@ rules:
 - apiGroups:
   - tlq.tongtech.com
   resources:
-  - tlqwokers/status
+  - tlqworkers/status
   verbs:
   - get
