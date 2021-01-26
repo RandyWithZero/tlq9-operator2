@@ -112,7 +112,7 @@ func (o *WorkerOperate) CreateOrUpdateStatefulSet(worker *v1alpha1.TLQWorker, se
 				return nil, ctrl.Result{}, err
 			}
 			o.log.Info("set statefulSet owner:" + worker.Name)
-			if err := o.r.Create(o.ctx, statefulSet); err != nil && !errors.IsAlreadyExists(err) {
+			if err := o.r.Create(o.ctx, forWorker); err != nil && !errors.IsAlreadyExists(err) {
 				return nil, ctrl.Result{}, err
 			}
 			o.log.Info("create reference statefulSet:" + worker.Name)
