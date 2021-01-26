@@ -171,8 +171,8 @@ func buildStatefulSetInstanceForWorker(worker *v1alpha1.TLQWorker) *v12.Stateful
 	if &policy == nil || "" == policy {
 		policy = v1.PullAlways
 	}
-	volumes := help.BuildConfigVolume(worker.Spec.Spec)
-	dataVolume, claimTemplate := help.BuildDataVolume(worker.Spec.Spec)
+	volumes := help.BuildConfigVolume(*worker.Spec.Spec)
+	dataVolume, claimTemplate := help.BuildDataVolume(*worker.Spec.Spec)
 	var claimTemplates []v1.PersistentVolumeClaim
 	if dataVolume != nil {
 		volumes = append(volumes, *dataVolume)
@@ -181,8 +181,8 @@ func buildStatefulSetInstanceForWorker(worker *v1alpha1.TLQWorker) *v12.Stateful
 		claimTemplates = []v1.PersistentVolumeClaim{}
 		claimTemplates[0] = *claimTemplate
 	}
-	requirements := help.BuildResourceRequirements(worker.Spec.Spec)
-	mounts := help.BuildVolumeMounts(worker.Spec.Spec)
+	requirements := help.BuildResourceRequirements(*worker.Spec.Spec)
+	mounts := help.BuildVolumeMounts(*worker.Spec.Spec)
 	containers[0] = v1.Container{
 		Name:            worker.Name,
 		Image:           worker.Spec.Spec.Image,

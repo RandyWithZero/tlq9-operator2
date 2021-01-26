@@ -148,20 +148,24 @@ func (o *ClusterOperate) updateClusterStatus(cluster *v1alpha1.TLQCluster, maste
 	if &status.ReadyWorkerServer == nil {
 		status.ReadyWorkerServer = map[string]string{}
 	}
-	if master.Status.Parse == v1alpha1.Healthy {
-		status.ReadyMasterServer = master.Status.Server
-		status.Parse = v1alpha1.UnHealthy
-	}
-	status.TotalWorkerCount = cluster.Spec.WorkerSize
-	workers := status.ReadyWorkerServer
-	for _, item := range workerList.Items {
-		if item.Status.Parse == v1alpha1.Healthy {
-			workers[item.Name] = item.Status.Server
-		} else {
-			delete(workers, item.Name)
+	if master != nil {
+		if master.Status.Parse == v1alpha1.Healthy {
+			status.ReadyMasterServer = master.Status.Server
+			status.Parse = v1alpha1.UnHealthy
 		}
 	}
-	status.ReadyWorkerCount = len(workers)
+	status.TotalWorkerCount = cluster.Spec.WorkerSize
+	if workerList != nil {
+		workers := status.ReadyWorkerServer
+		for _, item := range workerList.Items {
+			if item.Status.Parse == v1alpha1.Healthy {
+				workers[item.Name] = item.Status.Server
+			} else {
+				delete(workers, item.Name)
+			}
+		}
+		status.ReadyWorkerCount = len(workers)
+	}
 	if status.ReadyWorkerCount == status.TotalWorkerCount {
 		status.Parse = v1alpha1.Healthy
 	}
@@ -205,7 +209,7 @@ func compareNameServerSpec(spec1 v1alpha1.TLQMasterSpec, spec2 v1alpha1.TLQMaste
 	var2 := spec1.UserName == spec2.UserName
 	var3 := spec1.Password == spec2.Password
 	var4 := spec1.AdvertiseInterval == spec2.AdvertiseInterval
-	var5 := compareSpec(spec1.Spec, spec2.Spec)
+	var5 := compareSpec(*spec1.Spec, *spec2.Spec)
 	return var1 && var2 && var3 && var4 && var5
 }
 func compareWorkerSpec(spec1 v1alpha1.TLQWorkerSpec, spec2 v1alpha1.TLQWorkerSpec) bool {
@@ -215,7 +219,7 @@ func compareWorkerSpec(spec1 v1alpha1.TLQWorkerSpec, spec2 v1alpha1.TLQWorkerSpe
 	var4 := spec1.RequestServiceNum == spec2.RequestServiceNum
 	var5 := spec1.ResponseServiceNum == spec2.ResponseServiceNum
 	var6 := spec1.WorkRootDir == spec2.WorkRootDir
-	var7 := compareSpec(spec1.Spec, spec2.Spec)
+	var7 := compareSpec(*spec1.Spec, *spec2.Spec)
 	return var1 && var2 && var3 && var4 && var5 && var6 && var7
 }
 func compareSpec(spec1 v1alpha1.Spec, spec2 v1alpha1.Spec) bool {
