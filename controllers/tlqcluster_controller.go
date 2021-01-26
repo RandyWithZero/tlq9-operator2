@@ -82,17 +82,14 @@ func (r *TLQClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if workerList == nil {
 		return c, err
 	}
-	if len(workerList.Items) == 0 {
-		worker, workerResult, err := operate.CreateOrUpdateTlqWorker(cluster, 0, nameserverUrl)
-		if worker == nil {
-			return workerResult, err
-		}
-	} else if 0 < len(workerList.Items) && len(workerList.Items) < cluster.Spec.WorkerSize+1 {
+	if len(workerList.Items) < cluster.Spec.WorkerSize+1 {
 		size := cluster.Spec.WorkerSize
 		indexList := make([]int, size)
+		indexListCP := make([]int, size)
 		for _, item := range workerList.Items {
 			index, _ := strconv.Atoi(item.Labels["index"])
 			indexList[index] = 1
+			indexListCP[index] = 1
 		}
 		for i := range indexList {
 			if indexList[i] == 0 {
@@ -100,8 +97,18 @@ func (r *TLQClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 				if worker == nil {
 					return workerResult, err
 				}
+				indexListCP[i] = 1
 			}
 			break
+		}
+		unCreateWorkerCount := 0
+		for j := range indexListCP {
+			if indexListCP[j] == 0 {
+				unCreateWorkerCount++
+			}
+		}
+		if unCreateWorkerCount != 0 {
+			return ctrl.Result{}, errors.New(strconv.Itoa(unCreateWorkerCount) + "workers are left to creating")
 		}
 	} else {
 		for _, item := range workerList.Items {
