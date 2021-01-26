@@ -53,7 +53,7 @@ func (o *WorkerOperate) CreateOrUpdateService(worker *v1alpha1.TLQWorker) (*v1.S
 			if err := o.r.Create(o.ctx, service); err != nil && !errors.IsAlreadyExists(err) {
 				return nil, ctrl.Result{}, err
 			}
-			o.log.Info("create reference service" + worker.Name)
+			o.log.Info("create reference service:" + worker.Name)
 		} else {
 			return nil, ctrl.Result{}, err
 		}
@@ -73,7 +73,7 @@ func (o *WorkerOperate) CreateOrUpdateService(worker *v1alpha1.TLQWorker) (*v1.S
 	return service, ctrl.Result{}, nil
 }
 func (o *WorkerOperate) UpdateWorkerStatus(worker *v1alpha1.TLQWorker, statefulSet *v12.StatefulSet, service *v1.Service) (ctrl.Result, error) {
-	o.log.Info("update TLQWorker resource status ...")
+	o.log.Info("update TLQWorker resource status :" + worker.Name)
 	oldStatus := worker.Status.Parse
 	if statefulSet.Status.ReadyReplicas == defaultReplicas {
 		worker.Status.Parse = v1alpha1.Healthy
@@ -108,14 +108,14 @@ func (o *WorkerOperate) CreateOrUpdateStatefulSet(worker *v1alpha1.TLQWorker, se
 		if errors.IsNotFound(err) {
 			forWorker := buildStatefulSetInstanceForWorker(worker)
 			SetEnvForWorker(forWorker, service, worker)
-			if err := controllerutil.SetControllerReference(forWorker, statefulSet, o.r.Scheme); err != nil {
+			if err := controllerutil.SetControllerReference(worker, forWorker, o.r.Scheme); err != nil {
 				return nil, ctrl.Result{}, err
 			}
-			o.log.Info("set statefulSet owner ...")
+			o.log.Info("set statefulSet owner:" + worker.Name)
 			if err := o.r.Create(o.ctx, statefulSet); err != nil && !errors.IsAlreadyExists(err) {
 				return nil, ctrl.Result{}, err
 			}
-			o.log.Info("create reference statefulSet...")
+			o.log.Info("create reference statefulSet:" + worker.Name)
 			return statefulSet, ctrl.Result{}, err
 		} else {
 			return nil, ctrl.Result{}, err
@@ -125,7 +125,7 @@ func (o *WorkerOperate) CreateOrUpdateStatefulSet(worker *v1alpha1.TLQWorker, se
 		annotations := statefulSetNew.Annotations
 		SetEnvForWorker(statefulSetNew, service, worker)
 		if !bytes.Equal([]byte(statefulSet.Annotations["owner-spec"]), []byte(statefulSetNew.Annotations["owner-spec"])) {
-			o.log.Info("update reference statefulSet...")
+			o.log.Info("update reference statefulSet:" + worker.Name)
 			statefulSetNew.ObjectMeta = *statefulSet.ObjectMeta.DeepCopy()
 			statefulSetNew.Annotations = annotations
 			err := o.r.Update(o.ctx, statefulSetNew)
