@@ -224,8 +224,19 @@ func compareSpec(spec1 v1alpha1.Spec, spec2 v1alpha1.Spec) bool {
 	var3 := spec1.Port == spec2.Port
 	var4 := spec1.Image == spec2.Image
 	var5 := spec1.ImagePullPolicy == spec2.ImagePullPolicy
-	var6 := compareDataPersistentSpec(*spec1.DataPersistentSpec, *spec2.DataPersistentSpec)
-	var7 := compareResources(*spec1.Resources, *spec2.Resources)
+	var6 := false
+	if spec1.DataPersistentSpec != nil && spec2.DataPersistentSpec != nil {
+		var6 = compareDataPersistentSpec(*spec1.DataPersistentSpec, *spec2.DataPersistentSpec)
+	} else if spec1.DataPersistentSpec == nil && spec2.DataPersistentSpec == nil {
+		var6 = true
+	}
+	var7 := false
+	if spec1.Resources != nil && spec2.Resources != nil {
+		var7 = compareResources(*spec1.Resources, *spec2.Resources)
+	} else if spec1.Resources == nil && spec2.Resources == nil {
+		var7 = true
+	}
+
 	return var1 && var2 && var3 && var4 && var5 && var6 && var7
 }
 func compareDataPersistentSpec(spec1 v1alpha1.DataPersistentSpec, spec2 v1alpha1.DataPersistentSpec) bool {
