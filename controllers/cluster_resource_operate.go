@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -174,6 +176,8 @@ func (o *ClusterOperate) updateClusterStatus(cluster *v1alpha1.TLQCluster, maste
 }
 
 func buildNameServerInstance(cluster *v1alpha1.TLQCluster) *v1alpha1.TLQMaster {
+	marshal, _ := json.Marshal(cluster)
+	fmt.Println(string(marshal))
 	masterName := cluster.Name + "-" + NameServerSign
 	template := cluster.Spec.MasterTemplate
 	master := &v1alpha1.TLQMaster{
