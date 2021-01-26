@@ -197,7 +197,7 @@ func buildStatefulSetInstance(master *v1alpha1.TLQMaster) *v12.StatefulSet {
 		ImagePullPolicy: policy,
 		VolumeMounts:    mounts,
 		Ports:           ports,
-		Resources:       *requirements,
+		Resources:       requirements,
 	}
 	template := v1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
