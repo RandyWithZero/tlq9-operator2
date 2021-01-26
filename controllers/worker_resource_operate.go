@@ -301,7 +301,7 @@ func SetEnvForWorker(statefulSet *v12.StatefulSet, service *v1.Service, worker *
 		Value: nameserver,
 	}
 	if envs == nil || cap(envs) == 0 {
-		envs = make([]v1.EnvVar, 8)
+		envs = make([]v1.EnvVar, 14)
 		envs[0] = e1
 		envs[1] = e2
 		envs[2] = e3
