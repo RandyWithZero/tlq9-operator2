@@ -109,7 +109,9 @@ func (o *ClusterOperate) CreateOrUpdateTlqWorker(cluster *v1alpha1.TLQCluster, i
 	if err != nil {
 		if errors.IsNotFound(err) {
 			instance := buildWorkerInstance(cluster, index)
-			instance.Annotations["nameserver"] = nameserverUrl
+			instance.Annotations = map[string]string{
+				"nameserver": nameserverUrl,
+			}
 			if err := controllerutil.SetControllerReference(cluster, instance, o.r.Scheme); err != nil {
 				return nil, ctrl.Result{}, err
 			}
@@ -170,6 +172,9 @@ func (o *ClusterOperate) updateClusterStatus(cluster *v1alpha1.TLQCluster, maste
 		status.Parse = v1alpha1.Healthy
 	}
 	rwRock.Unlock()
+	if err := o.r.Status().Update(o.ctx, cluster); err != nil {
+		return ctrl.Result{}, err
+	}
 	return ctrl.Result{}, nil
 }
 
