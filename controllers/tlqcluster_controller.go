@@ -69,10 +69,10 @@ func (r *TLQClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return masterResult, err
 	}
 	//update cluster status from master
-	status, err := operate.updateClusterStatus(cluster, master, nil)
+	/*status, err := operate.updateClusterStatus(cluster, master, nil)
 	if err != nil {
 		return status, err
-	}
+	}*/
 	if master.Status.Parse != tlqv1alpha1.Healthy {
 		return ctrl.Result{}, errors.New("nameserver not ready")
 	}
@@ -117,7 +117,7 @@ func (r *TLQClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	}
 	//update cluster status from worker
-	clusterStatus, err := operate.updateClusterStatus(cluster, nil, workerList)
+	clusterStatus, err := operate.updateClusterStatus(cluster, master, workerList)
 	if err != nil {
 		return clusterStatus, err
 	}
