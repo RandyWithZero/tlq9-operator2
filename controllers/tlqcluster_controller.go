@@ -107,7 +107,7 @@ func (r *TLQClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		var willDeleteWorker *tlqv1alpha1.TLQWorker
 		for _, item := range workerList.Items {
 			index, _ := strconv.Atoi(item.Labels["index"])
-			if index > cluster.Spec.WorkerSize {
+			if index > cluster.Spec.WorkerSize-1 {
 				willDeleteWorker = &item
 				break
 			}
