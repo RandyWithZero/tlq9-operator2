@@ -149,7 +149,7 @@ func (o *ClusterOperate) updateClusterStatus(cluster *v1alpha1.TLQCluster, maste
 	if &status.Parse == nil || "" == status.Parse {
 		status.Parse = v1alpha1.Pending
 	}
-	status.ReadyWorkerServer = map[string]string{}
+	status.ReadyWorkerServer = make(map[string]string, cluster.Spec.WorkerSize)
 	if master != nil {
 		if master.Status.Parse == v1alpha1.Healthy {
 			status.ReadyMasterServer = master.Status.Server
