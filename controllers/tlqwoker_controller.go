@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"github.com/go-logr/logr"
+	v12 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -87,5 +88,6 @@ func (r *TLQWorkerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 func (r *TLQWorkerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&tlqv1alpha1.TLQWorker{}).
+		Owns(&v12.StatefulSet{}).
 		Complete(r)
 }
