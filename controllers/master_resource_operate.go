@@ -97,7 +97,7 @@ func (o *MasterOperate) UpdateMasterStatus(master *v1alpha1.TLQMaster, statefulS
 		master.Status.Parse = v1alpha1.Pending
 		master.Status.Server = ""
 	}
-	if oldStatus.Equal(&master.Status) {
+	if !oldStatus.Equal(&master.Status) {
 		if err := o.r.Status().Update(o.ctx, master); err != nil {
 			return ctrl.Result{}, err
 		}

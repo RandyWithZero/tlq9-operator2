@@ -93,7 +93,7 @@ func (o *WorkerOperate) UpdateWorkerStatus(worker *v1alpha1.TLQWorker, statefulS
 		worker.Status.Parse = v1alpha1.Pending
 		worker.Status.Server = ""
 	}
-	if oldStatus.Equal(&worker.Status) {
+	if !oldStatus.Equal(&worker.Status) {
 		if err := o.r.Status().Update(o.ctx, worker); err != nil {
 			return ctrl.Result{}, err
 		}

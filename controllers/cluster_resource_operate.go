@@ -172,7 +172,7 @@ func (o *ClusterOperate) updateClusterStatus(cluster *v1alpha1.TLQCluster, maste
 	if status.ReadyWorkerCount == status.TotalWorkerCount {
 		status.Parse = v1alpha1.Healthy
 	}
-	if oldStatus.Equal(&cluster.Status) {
+	if !oldStatus.Equal(&cluster.Status) {
 		if err := o.r.Status().Update(o.ctx, cluster); err != nil {
 			return ctrl.Result{}, err
 		}
