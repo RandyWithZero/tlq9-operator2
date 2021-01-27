@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -143,16 +144,18 @@ func (o *ClusterOperate) CreateOrUpdateTlqWorker(cluster *v1alpha1.TLQCluster, i
 }
 
 func (o *ClusterOperate) updateClusterStatus(cluster *v1alpha1.TLQCluster, master *v1alpha1.TLQMaster, workerList *v1alpha1.TLQWorkerList) (ctrl.Result, error) {
-	rwRock.Lock()
 	oldStatus := cluster.Status.DeepCopy()
 	o.log.Info("update TLQCluster resource status ...")
 	status := &cluster.Status
-	status.Parse = v1alpha1.Pending
-	if &status.ReadyWorkerServer == nil {
+	if &status.Parse == nil || "" == status.Parse {
+		status.Parse = v1alpha1.Pending
+	}
+	if status.ReadyWorkerServer == nil {
 		status.ReadyWorkerServer = map[string]string{}
 	}
 	if master != nil {
 		if master.Status.Parse == v1alpha1.Healthy {
+			fmt.Println("++++++++++++++++++set status.Parse", master.Status.Parse)
 			status.ReadyMasterServer = master.Status.Server
 			status.Parse = v1alpha1.UnHealthy
 		}
@@ -162,12 +165,15 @@ func (o *ClusterOperate) updateClusterStatus(cluster *v1alpha1.TLQCluster, maste
 		workers := status.ReadyWorkerServer
 		for _, item := range workerList.Items {
 			if item.Status.Parse == v1alpha1.Healthy {
+				fmt.Println("++++++++++++++++++add ReadyWorker", workers[item.Name])
 				workers[item.Name] = item.Status.Server
 			} else {
+				fmt.Println("++++++++++++++++++delete unReadyWorker", workers[item.Name])
 				delete(workers, item.Name)
 			}
 		}
 		status.ReadyWorkerCount = len(workers)
+		fmt.Println("++++++++++++++++++set status.ReadyWorkerCount", len(workers))
 	}
 	if status.ReadyWorkerCount == status.TotalWorkerCount {
 		status.Parse = v1alpha1.Healthy
@@ -177,7 +183,6 @@ func (o *ClusterOperate) updateClusterStatus(cluster *v1alpha1.TLQCluster, maste
 			return ctrl.Result{}, err
 		}
 	}
-	rwRock.Unlock()
 	return ctrl.Result{}, nil
 }
 
