@@ -68,11 +68,6 @@ func (r *TLQClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if master == nil {
 		return masterResult, err
 	}
-	//update cluster status from master
-	status, err := operate.updateClusterStatus(cluster, master, nil)
-	if err != nil {
-		return status, err
-	}
 	if master.Status.Parse != tlqv1alpha1.Healthy {
 		return ctrl.Result{}, errors.New("nameserver not ready")
 	}
@@ -83,7 +78,7 @@ func (r *TLQClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return c, err
 	}
 	//update cluster status from worker
-	clusterStatus, err := operate.updateClusterStatus(cluster, nil, workerList)
+	clusterStatus, err := operate.updateClusterStatus(cluster, master, workerList)
 	if err != nil {
 		return clusterStatus, err
 	}
@@ -106,18 +101,21 @@ func (r *TLQClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			if worker == nil {
 				return workerResult, err
 			}
-			//return ctrl.Result{}, errors.New("workers are  created to respect count:" + strconv.Itoa(size))
 		}
 
 	} else if len(workerList.Items) > size {
+		var willDeleteWorker *tlqv1alpha1.TLQWorker
 		for _, item := range workerList.Items {
 			index, _ := strconv.Atoi(item.Labels["index"])
 			if index > cluster.Spec.WorkerSize {
-				c, err := operate.DeleteWorker(&item)
-				if err != nil {
-					return c, err
-				}
-				//return ctrl.Result{}, errors.New("workers are  deleted to respect count:" + strconv.Itoa(size))
+				willDeleteWorker = &item
+				break
+			}
+		}
+		if willDeleteWorker != nil {
+			c, err := operate.DeleteWorker(willDeleteWorker)
+			if err != nil {
+				return c, err
 			}
 		}
 	}
