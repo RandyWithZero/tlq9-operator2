@@ -106,7 +106,7 @@ func (r *TLQClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			if worker == nil {
 				return workerResult, err
 			}
-			return ctrl.Result{}, errors.New("workers are  creating to respect count:" + strconv.Itoa(size))
+			return ctrl.Result{}, errors.New("workers are  created to respect count:" + strconv.Itoa(size))
 		}
 
 	} else if len(workerList.Items) > size {
@@ -117,7 +117,7 @@ func (r *TLQClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 				if err != nil {
 					return c, err
 				}
-
+				return ctrl.Result{}, errors.New("workers are  deleted to respect count:" + strconv.Itoa(size))
 			}
 		}
 	}

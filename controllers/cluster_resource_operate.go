@@ -145,17 +145,13 @@ func (o *ClusterOperate) CreateOrUpdateTlqWorker(cluster *v1alpha1.TLQCluster, i
 
 func (o *ClusterOperate) updateClusterStatus(cluster *v1alpha1.TLQCluster, master *v1alpha1.TLQMaster, workerList *v1alpha1.TLQWorkerList) (ctrl.Result, error) {
 	oldStatus := cluster.Status.DeepCopy()
-	o.log.Info("update TLQCluster resource status ...")
 	status := &cluster.Status
 	if &status.Parse == nil || "" == status.Parse {
 		status.Parse = v1alpha1.Pending
 	}
-	if status.ReadyWorkerServer == nil {
-		status.ReadyWorkerServer = map[string]string{}
-	}
+	status.ReadyWorkerServer = map[string]string{}
 	if master != nil {
 		if master.Status.Parse == v1alpha1.Healthy {
-			fmt.Println("++++++++++++++++++set status.Parse", master.Status.Parse)
 			status.ReadyMasterServer = master.Status.Server
 			status.Parse = v1alpha1.UnHealthy
 		}
@@ -164,16 +160,9 @@ func (o *ClusterOperate) updateClusterStatus(cluster *v1alpha1.TLQCluster, maste
 	if workerList != nil {
 		workers := status.ReadyWorkerServer
 		for _, item := range workerList.Items {
-			if item.Status.Parse == v1alpha1.Healthy {
-				fmt.Println("++++++++++++++++++add ReadyWorker", workers[item.Name])
-				workers[item.Name] = item.Status.Server
-			} else {
-				fmt.Println("++++++++++++++++++delete unReadyWorker", workers[item.Name])
-				delete(workers, item.Name)
-			}
+			workers[item.Name] = fmt.Sprintf("%v[%v]", item.Status.Server, item.Status.Parse)
 		}
 		status.ReadyWorkerCount = len(workers)
-		fmt.Println("++++++++++++++++++set status.ReadyWorkerCount", len(workers))
 	}
 	if status.ReadyWorkerCount == status.TotalWorkerCount {
 		status.Parse = v1alpha1.Healthy
