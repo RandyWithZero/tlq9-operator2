@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"reflect"
 )
 
 type MountType string
@@ -56,15 +57,24 @@ type TLQClusterSpec struct {
 // TLQClusterStatus defines the observed state of TLQCluster
 type TLQClusterStatus struct {
 	//TotalWorkerCount
-	TotalWorkerCount int `json:"totalWorkerCount,omitempty"`
+	TotalWorkerCount int `json:"totalWorkerCount"`
 	//ReadyWorkerCount
-	ReadyWorkerCount int `json:"readyWorkerCount,omitempty"`
+	ReadyWorkerCount int `json:"readyWorkerCount"`
 	//ReadyWorkerServer
 	ReadyWorkerServer map[string]string `json:"readyWorkerServer,omitempty"`
 	//ReadyMasterServer
 	ReadyMasterServer string `json:"readyMasterServer,omitempty"`
 	//Parse
 	Parse Status `json:"parse,omitempty"`
+}
+
+func (thisStatus *TLQClusterStatus) Equal(thatStatus *TLQClusterStatus) bool {
+	var1 := thisStatus.Parse == thatStatus.Parse
+	var2 := thisStatus.TotalWorkerCount == thatStatus.TotalWorkerCount
+	var3 := thisStatus.ReadyWorkerCount == thatStatus.ReadyWorkerCount
+	var4 := thisStatus.ReadyMasterServer == thatStatus.ReadyMasterServer
+	var5 := reflect.DeepEqual(thisStatus.ReadyWorkerServer, thatStatus.ReadyWorkerServer)
+	return var1 && var2 && var3 && var4 && var5
 }
 
 //+kubebuilder:object:root=true

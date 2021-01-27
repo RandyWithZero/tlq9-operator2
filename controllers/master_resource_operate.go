@@ -78,7 +78,7 @@ func (o *MasterOperate) CreateOrUpdateService(master *v1alpha1.TLQMaster) (*v1.S
 }
 func (o *MasterOperate) UpdateMasterStatus(master *v1alpha1.TLQMaster, statefulSet *v12.StatefulSet, service *v1.Service) (ctrl.Result, error) {
 	o.log.Info("update TLQMaster resource status ...")
-	oldStatus := master.Status.Parse
+	oldStatus := master.Status.DeepCopy()
 	if statefulSet.Status.ReadyReplicas == defaultReplicas {
 		master.Status.Parse = v1alpha1.Healthy
 		list := &v1.PodList{}
@@ -97,7 +97,7 @@ func (o *MasterOperate) UpdateMasterStatus(master *v1alpha1.TLQMaster, statefulS
 		master.Status.Parse = v1alpha1.Pending
 		master.Status.Server = ""
 	}
-	if oldStatus != master.Status.Parse {
+	if oldStatus.Equal(&master.Status) {
 		if err := o.r.Status().Update(o.ctx, master); err != nil {
 			return ctrl.Result{}, err
 		}

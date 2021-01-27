@@ -74,7 +74,7 @@ func (o *WorkerOperate) CreateOrUpdateService(worker *v1alpha1.TLQWorker) (*v1.S
 }
 func (o *WorkerOperate) UpdateWorkerStatus(worker *v1alpha1.TLQWorker, statefulSet *v12.StatefulSet, service *v1.Service) (ctrl.Result, error) {
 	o.log.Info("update TLQWorker resource status :" + worker.Name)
-	oldStatus := worker.Status.Parse
+	oldStatus := worker.Status.DeepCopy()
 	if statefulSet.Status.ReadyReplicas == defaultReplicas {
 		worker.Status.Parse = v1alpha1.Healthy
 		list := &v1.PodList{}
@@ -93,7 +93,7 @@ func (o *WorkerOperate) UpdateWorkerStatus(worker *v1alpha1.TLQWorker, statefulS
 		worker.Status.Parse = v1alpha1.Pending
 		worker.Status.Server = ""
 	}
-	if oldStatus != worker.Status.Parse {
+	if oldStatus.Equal(&worker.Status) {
 		if err := o.r.Status().Update(o.ctx, worker); err != nil {
 			return ctrl.Result{}, err
 		}

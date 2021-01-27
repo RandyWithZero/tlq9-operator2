@@ -120,6 +120,12 @@ type TLQMasterStatus struct {
 	Server string `json:"server,omitempty"`
 }
 
+func (thisStatus *TLQMasterStatus) Equal(thatStatus *TLQMasterStatus) bool {
+	var1 := thisStatus.Parse == thatStatus.Parse
+	var2 := thisStatus.Server == thatStatus.Server
+	return var1 && var2
+}
+
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"

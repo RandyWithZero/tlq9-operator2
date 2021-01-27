@@ -144,6 +144,7 @@ func (o *ClusterOperate) CreateOrUpdateTlqWorker(cluster *v1alpha1.TLQCluster, i
 
 func (o *ClusterOperate) updateClusterStatus(cluster *v1alpha1.TLQCluster, master *v1alpha1.TLQMaster, workerList *v1alpha1.TLQWorkerList) (ctrl.Result, error) {
 	rwRock.Lock()
+	oldStatus := cluster.Status.DeepCopy()
 	o.log.Info("update TLQCluster resource status ...")
 	status := &cluster.Status
 	status.Parse = v1alpha1.Pending
@@ -171,10 +172,12 @@ func (o *ClusterOperate) updateClusterStatus(cluster *v1alpha1.TLQCluster, maste
 	if status.ReadyWorkerCount == status.TotalWorkerCount {
 		status.Parse = v1alpha1.Healthy
 	}
-	rwRock.Unlock()
-	if err := o.r.Status().Update(o.ctx, cluster); err != nil {
-		return ctrl.Result{}, err
+	if oldStatus.Equal(&cluster.Status) {
+		if err := o.r.Status().Update(o.ctx, cluster); err != nil {
+			return ctrl.Result{}, err
+		}
 	}
+	rwRock.Unlock()
 	return ctrl.Result{}, nil
 }
 

@@ -69,10 +69,10 @@ func (r *TLQClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return masterResult, err
 	}
 	//update cluster status from master
-	/*status, err := operate.updateClusterStatus(cluster, master, nil)
+	status, err := operate.updateClusterStatus(cluster, master, nil)
 	if err != nil {
 		return status, err
-	}*/
+	}
 	if master.Status.Parse != tlqv1alpha1.Healthy {
 		return ctrl.Result{}, errors.New("nameserver not ready")
 	}
@@ -82,35 +82,34 @@ func (r *TLQClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	if workerList == nil {
 		return c, err
 	}
-	if len(workerList.Items) < cluster.Spec.WorkerSize+1 {
-		size := cluster.Spec.WorkerSize
+	//update cluster status from worker
+	clusterStatus, err := operate.updateClusterStatus(cluster, nil, workerList)
+	if err != nil {
+		return clusterStatus, err
+	}
+	size := cluster.Spec.WorkerSize
+	if len(workerList.Items) < size {
 		indexList := make([]int, size)
-		indexListCP := make([]int, size)
 		for _, item := range workerList.Items {
 			index, _ := strconv.Atoi(item.Labels["index"])
 			indexList[index] = 1
-			indexListCP[index] = 1
 		}
+		willCreateIndex := size
 		for i := range indexList {
 			if indexList[i] == 0 {
-				worker, workerResult, err := operate.CreateOrUpdateTlqWorker(cluster, i, nameserverUrl)
-				if worker == nil {
-					return workerResult, err
-				}
-				indexListCP[i] = 1
-			}
-			break
-		}
-		unCreateWorkerCount := 0
-		for j := range indexListCP {
-			if indexListCP[j] == 0 {
-				unCreateWorkerCount++
+				willCreateIndex = i
+				break
 			}
 		}
-		if unCreateWorkerCount != 0 {
-			return ctrl.Result{}, errors.New(strconv.Itoa(unCreateWorkerCount) + "workers are left to creating")
+		if willCreateIndex < size {
+			worker, workerResult, err := operate.CreateOrUpdateTlqWorker(cluster, willCreateIndex, nameserverUrl)
+			if worker == nil {
+				return workerResult, err
+			}
+			return ctrl.Result{}, errors.New("workers are  creating to respect count:" + strconv.Itoa(size))
 		}
-	} else {
+
+	} else if len(workerList.Items) > size {
 		for _, item := range workerList.Items {
 			index, _ := strconv.Atoi(item.Labels["index"])
 			if index > cluster.Spec.WorkerSize {
@@ -121,12 +120,6 @@ func (r *TLQClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 			}
 		}
-
-	}
-	//update cluster status from worker
-	clusterStatus, err := operate.updateClusterStatus(cluster, master, workerList)
-	if err != nil {
-		return clusterStatus, err
 	}
 	return ctrl.Result{}, nil
 }
